@@ -47,3 +47,53 @@ contract SimpleVault {
     mapping(address => uint256) private s_shares;
 
     // ─── Modifiers ─────────────────────────────────────────────────────────────
+
+    /// @dev Reverts on reentrant calls. Cheaper than OZ ReentrancyGuard for teaching clarity.
+    modifier nonReentrant() {
+        if (s_locked) revert SimpleVault__ReentrantCall();
+        s_locked = true;
+        _;
+        s_locked = false;
+    }
+
+    // ─── External functions ────────────────────────────────────────────────────
+
+    /// @notice Deposit ETH and receive vault shares.
+    /// @dev    Shares = (deposit / totalAssets) * totalShares.
+    ///         First depositor gets shares equal to wei deposited (1:1 seed).
+    function deposit() external payable nonReentrant {
+        if (msg.value == 0) revert SimpleVault__ZeroDeposit();
+
+        uint256 shares = _convertToShares(msg.value);
+        if (shares == 0) revert SimpleVault__ZeroShares();
+
+        s_shares[msg.sender] += shares;
+        s_totalShares += shares;
+
+        emit Deposited(msg.sender, msg.value, shares);
+    }
+
+    /// @notice Redeem `_shares` for the proportional amount of ETH.
+    /// @param _shares Number of shares to redeem.
+    function withdraw(uint256 _shares) external nonReentrant {
+        if (_shares == 0) revert SimpleVault__ZeroShares();
+
+        uint256 userShares = s_shares[msg.sender];
+        if (userShares < _shares) {
+            revert SimpleVault__InsufficientShares(userShares, _shares);
+        }
+
+        uint256 ethAmount = _convertToAssets(_shares);
+
+        // ── Effects (before external call — CEI pattern) ─────────────────────
+        s_shares[msg.sender] -= _shares;
+        s_totalShares -= _shares;
+
+        emit Withdrawn(msg.sender, _shares, ethAmount);
+
+        // ── Interaction ──────────────────────────────────────────────────────
+        (bool success,) = msg.sender.call{value: ethAmount}("");
+        if (!success) revert SimpleVault__TransferFailed();
+    }
+
+    // ─── View functions ────────────────────────────────────────────────────────
