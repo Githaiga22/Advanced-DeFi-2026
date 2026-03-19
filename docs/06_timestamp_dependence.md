@@ -36,3 +36,42 @@ function drawWinner() external {
 
 ### The Attack
 1. Validator buys a lottery ticket
+2. Waits until scheduled to propose a block
+3. Tries different `timestamp` values in simulation
+4. Publishes only the block where they win
+
+---
+
+## Vulnerable Timing
+
+```solidity
+// ❌ Risky for time-critical checks (±15 seconds)
+require(block.timestamp >= saleStartTime, "not started");
+require(block.timestamp <= saleEndTime, "ended");
+```
+
+For short time windows (minutes), a validator can shift the timestamp to participate in an exclusive window they shouldn't be in.
+
+---
+
+## Fixes
+
+### For Randomness: Chainlink VRF
+
+```solidity
+// ✅ FIXED — Chainlink VRF for cryptographically secure randomness
+import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+
+contract SecureLottery is VRFConsumerBaseV2 {
+    // Request random words from Chainlink oracle
+    function requestWinner() external {
+        vrfCoordinator.requestRandomWords(
+            keyHash, subscriptionId, requestConfirmations, callbackGasLimit, numWords
+        );
+    }
+
+    // Chainlink calls back with provably random value
+    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
+        uint256 winnerIndex = randomWords[0] % players.length;
+        winner = players[winnerIndex];
+    }
