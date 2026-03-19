@@ -100,3 +100,57 @@ contract Challenge_DeFiPool {
     /// @notice Deposit token collateral, borrow ETH at spot price.
     /// @dev    Bug 1: spot price oracle — manipulable by large swap in same tx.
     function borrow(uint256 _tokenCollateral) external {
+        require(_tokenCollateral > 0, "Pool: zero collateral");
+        require(tokenBalances[msg.sender] >= _tokenCollateral, "Pool: insufficient tokens");
+
+        // Bug 1: spot price read from pool — can be inflated via large swap
+        uint256 ethValue = (_tokenCollateral * ethReserve) / tokenReserve;
+        require(address(this).balance >= ethValue, "Pool: insufficient ETH");
+
+        tokenBalances[msg.sender] -= _tokenCollateral;
+        tokenCollateral[msg.sender] += _tokenCollateral;
+        ethDebt[msg.sender] += ethValue;
+
+        emit Borrowed(msg.sender, _tokenCollateral, ethValue);
+
+        // Bug 2: no reentrancy guard — callback can re-enter borrow()
+        (bool ok,) = msg.sender.call{value: ethValue}("");
+        require(ok, "Pool: borrow transfer failed");
+    }
+
+    // ─── Flash loan ────────────────────────────────────────────────────────────
+
+    /// @notice Flash-loan ETH. Borrower must repay principal + 0.3% fee in same tx.
+    /// @param _amount Amount of ETH to borrow.
+    /// @param _receiver Contract to receive the ETH and execute logic.
+    function flashLoan(uint256 _amount, address _receiver) external {
+        require(_amount > 0, "Pool: zero amount");
+        require(address(this).balance >= _amount, "Pool: insufficient ETH");
+
+        uint256 fee = (_amount * 3) / 1000; // 0.3%
+        uint256 balanceBefore = address(this).balance;
+
+        _flashLoanActive = true;
+
+        // Bug 3: no check that _receiver implements the callback correctly
+        // A malicious receiver can re-enter other pool functions during the loan
+        (bool ok,) = _receiver.call{value: _amount}(abi.encodeWithSignature("onFlashLoan(uint256,uint256)", _amount, fee));
+        require(ok, "Pool: flash loan callback failed");
+
+        _flashLoanActive = false;
+
+        // Bug 4: fee check is weak — balance check doesn't account for tokens
+        require(address(this).balance >= balanceBefore + fee, "Pool: flash loan not repaid");
+
+        emit FlashLoan(_receiver, _amount, fee);
+    }
+
+    // ─── View ──────────────────────────────────────────────────────────────────
+
+    function getSpotPrice() external view returns (uint256 tokensPerETH) {
+        if (ethReserve == 0) return 0;
+        return (tokenReserve * 1e18) / ethReserve;
+    }
+
+    receive() external payable {}
+}
