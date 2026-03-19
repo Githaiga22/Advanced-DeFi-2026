@@ -67,3 +67,39 @@ contract Challenge_Escrow {
         EscrowRecord storage record = escrows[_id];
         require(!record.released, "Escrow: already released");
         require(block.timestamp >= record.deadline, "Escrow: still locked");
+
+        // Bug 1: tx.origin — a malicious contract can trigger this on behalf of beneficiary
+        require(tx.origin == record.beneficiary, "Escrow: not beneficiary");
+
+        record.released = true;
+        uint256 amount = record.amount;
+        record.amount = 0;
+
+        (bool ok,) = record.beneficiary.call{value: amount}("");
+        require(ok, "Escrow: transfer failed");
+
+        emit EscrowReleased(_id, record.beneficiary, amount);
+    }
+
+    /// @notice Depositor reclaims if deadline passes without release.
+    /// @dev    Bug 2: deadline check uses block.timestamp which can be influenced
+    ///         by validators to allow early reclaim within ~15 second window.
+    function refund(uint256 _id) external {
+        EscrowRecord storage record = escrows[_id];
+        require(!record.released, "Escrow: already released");
+        require(msg.sender == record.depositor, "Escrow: not depositor");
+
+        // Bug 2: block.timestamp manipulation — validator can set timestamp
+        // just past the deadline to enable early refund before beneficiary can react
+        require(block.timestamp >= record.deadline, "Escrow: not yet expired");
+
+        record.released = true;
+        uint256 amount = record.amount;
+        record.amount = 0;
+
+        (bool ok,) = record.depositor.call{value: amount}("");
+        require(ok, "Escrow: refund failed");
+
+        emit EscrowRefunded(_id, record.depositor, amount);
+    }
+}
