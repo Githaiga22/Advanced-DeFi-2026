@@ -47,3 +47,29 @@ contract Challenge_SafeVault {
     }
 
     /// @notice Withdraw your deposited ETH.
+    function withdraw() external {
+        uint256 amount = balances[msg.sender];
+        require(amount > 0, "SafeVault: nothing to withdraw");
+
+        // Send funds back to the user
+        (bool success,) = msg.sender.call{value: amount}("");
+        require(success, "SafeVault: transfer failed");
+
+        // Update state
+        balances[msg.sender] = 0;
+
+        emit Withdrawn(msg.sender, amount);
+    }
+
+    /// @notice Emergency drain — only owner can call.
+    function emergencyDrain() external {
+        require(msg.sender == owner, "SafeVault: not owner");
+        (bool ok,) = owner.call{value: address(this).balance}("");
+        require(ok, "SafeVault: drain failed");
+    }
+
+    /// @notice Returns the vault's total ETH balance.
+    function getBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+}
