@@ -67,3 +67,40 @@ contract SimpleStorage {
     /// @param _value The uint256 value to store.
     function store(uint256 _value) external {
         if (_value == 0) revert SimpleStorage__ZeroValue();
+
+        uint256 oldValue = s_storedValues[msg.sender];
+
+        console2.log("SimpleStorage.store: caller=%s old=%d new=%d", msg.sender, oldValue, _value);
+
+        s_storedValues[msg.sender] = _value;
+
+        emit StoredValueUpdated(msg.sender, oldValue, _value);
+    }
+
+    /// @notice Retrieve the value stored under a given address.
+    /// @param _user The address to look up.
+    /// @return The stored value (0 if never set).
+    function retrieve(address _user) external view returns (uint256) {
+        return s_storedValues[_user];
+    }
+
+    /// @notice Withdraw all ETH accidentally sent to this contract.
+    /// @dev    Only callable by the owner. Uses low-level call for safety.
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        emit OwnerWithdrawn(i_owner, balance);
+
+        (bool success,) = i_owner.call{value: balance}("");
+        require(success, "SimpleStorage: ETH transfer failed");
+    }
+
+    /// @notice Returns the contract owner.
+    function getOwner() external view returns (address) {
+        return i_owner;
+    }
+
+    // ─── Receive ───────────────────────────────────────────────────────────────
+
+    /// @dev Accept ETH (owner can withdraw later).
+    receive() external payable {}
+}
