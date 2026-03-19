@@ -5,3 +5,7 @@ libs = ["lib"]
 remappings = ["forge-std/=lib/forge-std/src/"]
 fuzz = { runs = 1000 }
 verbosity = 3
+
+[profile.ci]
+fuzz = { runs = 10000 }
+verbosity = 4
