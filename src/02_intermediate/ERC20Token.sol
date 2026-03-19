@@ -128,3 +128,70 @@ contract ERC20Token {
 
     /// @notice Mint new tokens to `_to`. Only callable by the owner.
     /// @param _to     Recipient of new tokens.
+    /// @param _amount Number of tokens to mint.
+    function mint(address _to, uint256 _amount) external {
+        if (msg.sender != i_owner) revert ERC20__NotOwner();
+        _mint(_to, _amount);
+    }
+
+    /// @notice Burn tokens from `_from`. Only callable by the owner.
+    /// @param _from   Address to burn from.
+    /// @param _amount Number of tokens to burn.
+    function burn(address _from, uint256 _amount) external {
+        if (msg.sender != i_owner) revert ERC20__NotOwner();
+        _burn(_from, _amount);
+    }
+
+    // ─── View helpers ──────────────────────────────────────────────────────────
+
+    function name() external view returns (string memory) {
+        return s_name;
+    }
+
+    function symbol() external view returns (string memory) {
+        return s_symbol;
+    }
+
+    function decimals() external view returns (uint8) {
+        return i_decimals;
+    }
+
+    function getOwner() external view returns (address) {
+        return i_owner;
+    }
+
+    // ─── Internal ──────────────────────────────────────────────────────────────
+
+    /// @dev Core transfer logic shared by transfer() and transferFrom().
+    function _transfer(address _from, address _to, uint256 _amount) internal {
+        if (_to == address(0)) revert ERC20__TransferToZeroAddress();
+
+        uint256 fromBalance = s_balances[_from];
+        if (fromBalance < _amount) {
+            revert ERC20__InsufficientBalance(fromBalance, _amount);
+        }
+
+        console2.log("ERC20.transfer: from=%s to=%s amount=%d", _from, _to, _amount);
+
+        s_balances[_from] = fromBalance - _amount;
+        s_balances[_to] += _amount;
+
+        emit Transfer(_from, _to, _amount);
+    }
+
+    /// @dev Mint `_amount` tokens to `_to`, increasing total supply.
+    function _mint(address _to, uint256 _amount) internal {
+        if (_to == address(0)) revert ERC20__MintToZeroAddress();
+        s_totalSupply += _amount;
+        s_balances[_to] += _amount;
+        emit Transfer(address(0), _to, _amount);
+    }
+
+    /// @dev Burn `_amount` tokens from `_from`, decreasing total supply.
+    function _burn(address _from, uint256 _amount) internal {
+        if (s_balances[_from] < _amount) revert ERC20__BurnExceedsBalance();
+        s_balances[_from] -= _amount;
+        s_totalSupply -= _amount;
+        emit Transfer(_from, address(0), _amount);
+    }
+}
