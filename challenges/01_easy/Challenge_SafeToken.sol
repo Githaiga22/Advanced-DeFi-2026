@@ -31,3 +31,37 @@ contract Challenge_SafeToken {
 
     string public name = "SafeToken";
     string public symbol = "SAFE";
+    uint8 public decimals = 18;
+    uint256 public totalSupply;
+
+    address public owner;
+    address public pendingOwner;
+
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    // ─── Constructor ───────────────────────────────────────────────────────────
+
+    constructor(uint256 _initialSupply) {
+        owner = msg.sender;
+        totalSupply = _initialSupply * 1e18;
+        balanceOf[msg.sender] = totalSupply;
+        emit Transfer(address(0), msg.sender, totalSupply);
+    }
+
+    // ─── ERC-20 ────────────────────────────────────────────────────────────────
+
+    function transfer(address _to, uint256 _amount) external returns (bool) {
+        require(balanceOf[msg.sender] >= _amount, "SafeToken: insufficient balance");
+        balanceOf[msg.sender] -= _amount;
+        balanceOf[_to] += _amount;
+        emit Transfer(msg.sender, _to, _amount);
+        return true;
+    }
+
+    function approve(address _spender, uint256 _amount) external returns (bool) {
+        allowance[msg.sender][_spender] = _amount;
+        emit Approval(msg.sender, _spender, _amount);
+        return true;
+    }
+
