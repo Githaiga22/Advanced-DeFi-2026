@@ -107,3 +107,60 @@ forge test --match-path test/03_exploits/ReentrancyExploit.t.sol -vvvv
 
 ## Vulnerability Coverage
 
+| # | Vulnerability | Contract | Exploit Test | Doc |
+|---|---|---|---|---|
+| 1 | Reentrancy | `VulnerableBank.sol` | `ReentrancyExploit.t.sol` | `01_reentrancy.md` |
+| 2 | Integer Overflow | `VulnerableToken.sol` | `OverflowExploit.t.sol` | `02_integer_overflow.md` |
+| 3 | Access Control | `VulnerableAccessControl.sol` | — | `03_access_control.md` |
+| 4 | DoS Attack | `VulnerableAuction.sol` | `DoSExploit.t.sol` | `04_dos_attack.md` |
+| 5 | Front-Running / MEV | — | — | `05_front_running.md` |
+| 6 | Timestamp Dependence | `VulnerableLottery.sol` | — | `06_timestamp_dependence.md` |
+| 7 | Flash Loans | — | — | `07_flash_loans.md` |
+| 8 | Oracle Manipulation | `VulnerableOracle.sol` | — | `08_price_oracle_manipulation.md` |
+
+---
+
+## Follow the Journey
+
+This repo grows as I learn. I'm working through:
+
+- **Cyfrin Updraft** — Foundry Fundamentals + Smart Contract Security
+- **CodeHawks First Flight** — beginner-friendly competitive audits
+- **Immunefi / Code4rena / Sherlock** — the goal
+
+If you're studying smart contract security too — follow along, open an issue, or just say hello. There's strength in learning together.
+
+---
+
+## Useful Commands
+
+```bash
+forge build --sizes         # compile + show contract sizes
+forge test -vvv             # run all tests
+forge test -vvvv            # full call traces (use for exploits)
+forge coverage              # code coverage report
+forge snapshot              # save gas snapshot
+forge fmt                   # format all Solidity files
+anvil                       # local Ethereum node
+cast call <addr> "fn()"     # read a contract function
+```
+
+---
+
+## Project Structure
+
+```
+basic-solc-project/
+├── src/                    — learning contracts (01 basics → 03 vulnerable)
+├── test/                   — test suite (unit + exploit tests)
+├── script/                 — deployment scripts
+├── challenges/             — bug bounty practice challenges
+├── docs/                   — vulnerability guides + cheatsheets
+├── lib/                    — forge-std (submodule)
+├── foundry.toml            — project config (fuzz: 1000 runs)
+└── .gitignore
+```
+
+---
+
+*Built with Foundry. Learning in public.*
