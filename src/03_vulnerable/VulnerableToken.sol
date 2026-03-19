@@ -53,3 +53,32 @@ contract VulnerableToken {
         }
         emit Transfer(msg.sender, _to, _amount);
         return true;
+    }
+
+    function approve(address _spender, uint256 _amount) external returns (bool) {
+        allowance[msg.sender][_spender] = _amount;
+        return true;
+    }
+
+    function transferFrom(address _from, address _to, uint256 _amount) external returns (bool) {
+        require(_to != address(0), "zero address");
+        // ❌ unchecked on both allowance and balance
+        unchecked {
+            allowance[_from][msg.sender] -= _amount;
+            balanceOf[_from] -= _amount;
+            balanceOf[_to] += _amount;
+        }
+        emit Transfer(_from, _to, _amount);
+        return true;
+    }
+
+    /// @notice Burn tokens from caller's balance.
+    /// @dev    BUG: unchecked subtraction — if balance < amount, wraps to max uint256.
+    function burn(uint256 _amount) external {
+        unchecked {
+            balanceOf[msg.sender] -= _amount; // ❌ wraps on underflow
+            totalSupply -= _amount;
+        }
+        emit Transfer(msg.sender, address(0), _amount);
+    }
+}
