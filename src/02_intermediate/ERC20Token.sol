@@ -63,3 +63,68 @@ contract ERC20Token {
             _mint(msg.sender, _initialSupply * (10 ** _decimals));
         }
     }
+
+    // ─── EIP-20 Functions ──────────────────────────────────────────────────────
+
+    /// @notice Returns the total token supply.
+    function totalSupply() external view returns (uint256) {
+        return s_totalSupply;
+    }
+
+    /// @notice Returns the token balance of `_account`.
+    /// @param _account Address to query.
+    function balanceOf(address _account) external view returns (uint256) {
+        return s_balances[_account];
+    }
+
+    /// @notice Transfer `_amount` tokens from caller to `_to`.
+    /// @param _to     Recipient address.
+    /// @param _amount Number of tokens (in smallest unit).
+    /// @return True on success.
+    function transfer(address _to, uint256 _amount) external returns (bool) {
+        _transfer(msg.sender, _to, _amount);
+        return true;
+    }
+
+    /// @notice Returns how many tokens `_spender` is allowed to spend on behalf of `_owner`.
+    /// @param _owner   Token holder address.
+    /// @param _spender Authorized spender address.
+    function allowance(address _owner, address _spender) external view returns (uint256) {
+        return s_allowances[_owner][_spender];
+    }
+
+    /// @notice Approve `_spender` to spend up to `_amount` of your tokens.
+    /// @dev    Setting to 0 revokes allowance. Standard front-running risk applies;
+    ///         use increaseAllowance / decreaseAllowance in production.
+    /// @param _spender Address to authorize.
+    /// @param _amount  Maximum tokens allowed to spend.
+    /// @return True on success.
+    function approve(address _spender, uint256 _amount) external returns (bool) {
+        if (_spender == address(0)) revert ERC20__ApproveToZeroAddress();
+        s_allowances[msg.sender][_spender] = _amount;
+        emit Approval(msg.sender, _spender, _amount);
+        return true;
+    }
+
+    /// @notice Transfer tokens from `_from` to `_to` using the caller's allowance.
+    /// @param _from   Token holder address.
+    /// @param _to     Recipient address.
+    /// @param _amount Number of tokens to transfer.
+    /// @return True on success.
+    function transferFrom(address _from, address _to, uint256 _amount) external returns (bool) {
+        uint256 currentAllowance = s_allowances[_from][msg.sender];
+        if (currentAllowance < _amount) {
+            revert ERC20__InsufficientAllowance(currentAllowance, _amount);
+        }
+
+        // Decrease allowance before transfer (CEI)
+        s_allowances[_from][msg.sender] = currentAllowance - _amount;
+
+        _transfer(_from, _to, _amount);
+        return true;
+    }
+
+    // ─── Owner functions ───────────────────────────────────────────────────────
+
+    /// @notice Mint new tokens to `_to`. Only callable by the owner.
+    /// @param _to     Recipient of new tokens.
