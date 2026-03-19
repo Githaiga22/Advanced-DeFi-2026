@@ -65,3 +65,38 @@ contract SimpleStorageTest is Test {
         assertEq(simpleStorage.retrieve(alice), 0);
     }
 
+    // ─── withdraw() ────────────────────────────────────────────────────────────
+
+    function test_WithdrawByOwner() public {
+        vm.deal(address(simpleStorage), 1 ether);
+        uint256 ownerBefore = owner.balance;
+
+        vm.prank(owner);
+        simpleStorage.withdraw();
+
+        assertEq(owner.balance, ownerBefore + 1 ether);
+        assertEq(address(simpleStorage).balance, 0);
+    }
+
+    function test_WithdrawRevertsForNonOwner() public {
+        vm.deal(address(simpleStorage), 1 ether);
+        vm.prank(alice);
+        vm.expectRevert(SimpleStorage.SimpleStorage__NotOwner.selector);
+        simpleStorage.withdraw();
+    }
+
+    // ─── Fuzz ──────────────────────────────────────────────────────────────────
+
+    function testFuzz_StoreAndRetrieve(uint256 _value) public {
+        vm.assume(_value > 0);
+        vm.prank(alice);
+        simpleStorage.store(_value);
+        assertEq(simpleStorage.retrieve(alice), _value);
+    }
+
+    // ─── getOwner() ────────────────────────────────────────────────────────────
+
+    function test_GetOwner() public view {
+        assertEq(simpleStorage.getOwner(), owner);
+    }
+}
