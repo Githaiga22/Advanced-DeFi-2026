@@ -172,3 +172,94 @@ cast call <CONTRACT_ADDRESS> "balanceOf(address)(uint256)" <WALLET_ADDRESS> \
 # Send a transaction
 cast send <CONTRACT_ADDRESS> "deposit()" \
   --value 1ether \
+  --private-key $PRIVATE_KEY \
+  --rpc-url http://localhost:8545
+
+# Decode calldata
+cast 4byte-decode <CALLDATA>
+
+# Get the storage slot value
+cast storage <CONTRACT_ADDRESS> <SLOT_NUMBER> --rpc-url http://localhost:8545
+
+# Replay a historical transaction
+cast run <TX_HASH> --rpc-url $MAINNET_RPC
+
+# Convert between units
+cast to-wei 1.5 ether
+cast from-wei 1500000000000000000
+
+# Compute a function selector
+cast sig "transfer(address,uint256)"
+
+# ABI encode
+cast abi-encode "transfer(address,uint256)" 0xABC... 1000
+```
+
+---
+
+## Contract Inspection
+
+```bash
+# Show storage layout
+forge inspect src/01_basics/SimpleStorage.sol:SimpleStorage storageLayout
+
+# Show ABI
+forge inspect src/01_basics/SimpleStorage.sol:SimpleStorage abi
+
+# Show bytecode
+forge inspect src/01_basics/SimpleStorage.sol:SimpleStorage bytecode
+
+# Show all methods
+forge inspect src/01_basics/SimpleStorage.sol:SimpleStorage methodIdentifiers
+```
+
+---
+
+## Static Analysis (Slither)
+
+```bash
+# Install Slither
+pip3 install slither-analyzer
+
+# Run on entire project
+slither .
+
+# Run on specific contract
+slither src/03_vulnerable/VulnerableBank.sol
+
+# Output to JSON
+slither . --json slither-report.json
+```
+
+---
+
+## Chisel (REPL)
+
+```bash
+# Launch the Solidity REPL
+chisel
+
+# Inside chisel:
+# > uint256 x = 2**256 - 1;
+# > x
+# > type(uint256).max
+# > address(0).balance
+```
+
+---
+
+## Environment Variables
+
+Create a `.env` file (never commit it):
+
+```bash
+PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+MAINNET_RPC=https://mainnet.infura.io/v3/YOUR_KEY
+SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY
+ETHERSCAN_KEY=YOUR_ETHERSCAN_KEY
+```
+
+Load in shell:
+```bash
+source .env
+```
