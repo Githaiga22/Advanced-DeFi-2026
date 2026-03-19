@@ -56,3 +56,33 @@ contract VulnerableLottery {
     /// @notice Draw the winner after the lottery ends.
     /// @dev    BUG: randomness comes from block.timestamp — manipulable by validators.
     function drawWinner() external {
+        require(block.timestamp >= lotteryEndTime, "VulnerableLottery: still running");
+        require(!drawn, "VulnerableLottery: already drawn");
+        require(players.length > 0, "VulnerableLottery: no players");
+        drawn = true;
+
+        // ❌ block.timestamp is controlled by the block proposer
+        uint256 randomIndex = uint256(
+            keccak256(
+                abi.encodePacked(
+                    block.timestamp, // ❌ manipulable
+                    block.prevrandao, // ❌ also manipulable post-merge (partially)
+                    players.length
+                )
+            )
+        ) % players.length;
+
+        address winner = players[randomIndex];
+        uint256 prize = address(this).balance;
+
+        emit WinnerSelected(winner, prize);
+
+        (bool ok,) = winner.call{value: prize}("");
+        require(ok, "VulnerableLottery: prize transfer failed");
+    }
+
+    /// @notice Returns the number of players.
+    function getPlayerCount() external view returns (uint256) {
+        return players.length;
+    }
+}
