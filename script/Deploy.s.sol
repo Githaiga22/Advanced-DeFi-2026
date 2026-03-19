@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+import {Script, console2} from "forge-std/Script.sol";
+import {SimpleStorage} from "../src/01_basics/SimpleStorage.sol";
+import {FundMe} from "../src/01_basics/FundMe.sol";
+import {ERC20Token} from "../src/02_intermediate/ERC20Token.sol";
+import {SimpleVault} from "../src/02_intermediate/SimpleVault.sol";
+
+/// @title Deploy
+/// @author Allan Robinson
+/// @notice Deployment script for all learning modules.
+///         Run on a local Anvil node:
+///           anvil
+///           forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast -vvvv
+///
