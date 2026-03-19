@@ -27,3 +27,19 @@ Thumbs.db
 
 # Node (if any tooling added later)
 node_modules/
+package-lock.json
+
+# Coverage reports
+lcov.info
+coverage/
+
+# Slither / static analysis output
+slither.db.json
+.slither/
+
+# Challenge answer keys (NEVER commit these)
+challenges/**/*_answers.md
+challenges/**/*_solution.sol
+
+# Dev tooling scripts (local only)
+commit_history.py
