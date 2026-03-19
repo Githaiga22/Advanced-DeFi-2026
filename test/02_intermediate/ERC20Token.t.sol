@@ -40,3 +40,46 @@ contract ERC20TokenTest is Test {
     function test_Transfer() public {
         uint256 amount = 100 * DECIMALS_FACTOR;
         vm.prank(owner);
+        token.transfer(alice, amount);
+        assertEq(token.balanceOf(alice), amount);
+        assertEq(token.balanceOf(owner), (INITIAL_SUPPLY * DECIMALS_FACTOR) - amount);
+    }
+
+    function test_TransferEmitsEvent() public {
+        uint256 amount = 50 * DECIMALS_FACTOR;
+        vm.prank(owner);
+        vm.expectEmit(true, true, false, true);
+        emit ERC20Token.Transfer(owner, alice, amount);
+        token.transfer(alice, amount);
+    }
+
+    function test_TransferRevertsInsufficientBalance() public {
+        uint256 tooMuch = INITIAL_SUPPLY * DECIMALS_FACTOR + 1;
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC20Token.ERC20__InsufficientBalance.selector, INITIAL_SUPPLY * DECIMALS_FACTOR, tooMuch)
+        );
+        token.transfer(alice, tooMuch);
+    }
+
+    function test_TransferRevertsToZeroAddress() public {
+        vm.prank(owner);
+        vm.expectRevert(ERC20Token.ERC20__TransferToZeroAddress.selector);
+        token.transfer(address(0), 1);
+    }
+
+    // ─── approve() + transferFrom() ────────────────────────────────────────────
+
+    function test_ApproveAndTransferFrom() public {
+        uint256 amount = 200 * DECIMALS_FACTOR;
+        vm.prank(owner);
+        token.approve(alice, amount);
+
+        assertEq(token.allowance(owner, alice), amount);
+
+        vm.prank(alice);
+        token.transferFrom(owner, bob, amount);
+
+        assertEq(token.balanceOf(bob), amount);
+        assertEq(token.allowance(owner, alice), 0);
+    }
