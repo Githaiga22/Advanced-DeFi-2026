@@ -36,3 +36,24 @@ contract VulnerableBank {
     }
 
     /// @notice Withdraw your full balance.
+    /// @dev    BUG: External call happens BEFORE balance is zeroed.
+    ///         A malicious receive() can re-enter this function and drain the bank.
+    function withdraw() external {
+        uint256 amount = balances[msg.sender];
+        require(amount > 0, "VulnerableBank: nothing to withdraw");
+
+        // ❌ INTERACTION before EFFECT — reentrancy attack vector
+        (bool success,) = msg.sender.call{value: amount}("");
+        require(success, "VulnerableBank: transfer failed");
+
+        // ❌ State updated AFTER the external call — too late
+        balances[msg.sender] = 0;
+
+        emit Withdrawn(msg.sender, amount);
+    }
+
+    /// @notice Returns the contract's total ETH balance.
+    function getContractBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+}
