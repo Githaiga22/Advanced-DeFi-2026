@@ -49,3 +49,54 @@ contract Challenge_DeFiPool {
     // ─── Constructor ───────────────────────────────────────────────────────────
 
     constructor() {
+        owner = msg.sender;
+    }
+
+    // ─── Liquidity ─────────────────────────────────────────────────────────────
+
+    /// @notice Add liquidity. Send ETH, specify token amount.
+    function addLiquidity(uint256 _tokenAmount) external payable {
+        require(msg.value > 0 && _tokenAmount > 0, "Pool: zero amount");
+
+        tokenBalances[msg.sender] -= _tokenAmount; // assume token is internal ledger
+
+        uint256 newShares;
+        if (totalShares == 0) {
+            newShares = msg.value;
+        } else {
+            newShares = (msg.value * totalShares) / ethReserve;
+        }
+
+        ethReserve += msg.value;
+        tokenReserve += _tokenAmount;
+        shares[msg.sender] += newShares;
+        totalShares += newShares;
+
+        emit LiquidityAdded(msg.sender, msg.value, _tokenAmount, newShares);
+    }
+
+    // ─── Swap ──────────────────────────────────────────────────────────────────
+
+    /// @notice Swap ETH for tokens using the constant-product formula.
+    function swapETHForTokens() external payable returns (uint256 tokensOut) {
+        require(msg.value > 0, "Pool: zero ETH");
+        require(tokenReserve > 0 && ethReserve > 0, "Pool: no liquidity");
+
+        // x * y = k — no fee
+        uint256 k = ethReserve * tokenReserve;
+        uint256 newEthReserve = ethReserve + msg.value;
+        uint256 newTokenReserve = k / newEthReserve;
+        tokensOut = tokenReserve - newTokenReserve;
+
+        ethReserve = newEthReserve;
+        tokenReserve = newTokenReserve;
+        tokenBalances[msg.sender] += tokensOut;
+
+        emit Swapped(msg.sender, msg.value, tokensOut);
+    }
+
+    // ─── Lending ───────────────────────────────────────────────────────────────
+
+    /// @notice Deposit token collateral, borrow ETH at spot price.
+    /// @dev    Bug 1: spot price oracle — manipulable by large swap in same tx.
+    function borrow(uint256 _tokenCollateral) external {
