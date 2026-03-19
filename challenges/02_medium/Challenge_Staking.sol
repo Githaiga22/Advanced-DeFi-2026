@@ -78,3 +78,45 @@ contract Challenge_Staking {
         stakedBalance[msg.sender] += msg.value;
         totalStaked += msg.value;
         emit Staked(msg.sender, msg.value);
+    }
+
+    /// @notice Unstake ETH.
+    function unstake(uint256 _amount) external updateReward(msg.sender) {
+        require(stakedBalance[msg.sender] >= _amount, "Staking: insufficient stake");
+        stakedBalance[msg.sender] -= _amount;
+        totalStaked -= _amount;
+
+        (bool ok,) = msg.sender.call{value: _amount}("");
+        require(ok, "Staking: transfer failed");
+
+        emit Unstaked(msg.sender, _amount);
+    }
+
+    /// @notice Claim accumulated rewards.
+    function claimReward() external updateReward(msg.sender) {
+        uint256 reward = rewards[msg.sender];
+        require(reward > 0, "Staking: no rewards");
+
+        rewards[msg.sender] = 0;
+
+        // Bug 1: no reentrancy guard — reward claim can re-enter
+        (bool ok,) = msg.sender.call{value: reward}("");
+        require(ok, "Staking: reward transfer failed");
+
+        emit RewardClaimed(msg.sender, reward);
+    }
+
+    // ─── View functions ────────────────────────────────────────────────────────
+
+    function rewardPerToken() public view returns (uint256) {
+        if (totalStaked == 0) return rewardPerTokenStored;
+        // Bug 2: precision loss — rewardRate * elapsed / totalStaked can be 0
+        // when totalStaked is very large relative to rewardRate
+        return rewardPerTokenStored + (rewardRate * (block.timestamp - lastUpdateTime)) / totalStaked;
+    }
+
+    function earned(address _account) public view returns (uint256) {
+        return (stakedBalance[_account] * (rewardPerToken() - userRewardPerTokenPaid[_account])) / 1e18
+            + rewards[_account];
+    }
+}
