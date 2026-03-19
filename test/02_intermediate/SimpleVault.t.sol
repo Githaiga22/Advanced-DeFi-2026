@@ -109,3 +109,61 @@ contract SimpleVaultTest is Test {
     function test_ReentrancyGuardBlocks() public {
         // Deploy a malicious receiver that tries to re-enter withdraw
         MaliciousReceiver attacker = new MaliciousReceiver(vault);
+        vm.deal(address(attacker), 2 ether);
+
+        attacker.seedDeposit{value: 1 ether}();
+
+        // The reentrancy guard reverts inside receive(), making the .call fail,
+        // which the vault then surfaces as TransferFailed. Either way re-entry is blocked.
+        vm.expectRevert(SimpleVault.SimpleVault__TransferFailed.selector);
+        attacker.attack();
+    }
+
+    // ─── Fuzz ──────────────────────────────────────────────────────────────────
+
+    function testFuzz_DepositAndWithdraw(uint256 _amount) public {
+        vm.assume(_amount >= 1 && _amount <= 5 ether);
+        vm.deal(alice, _amount);
+
+        vm.prank(alice);
+        vault.deposit{value: _amount}();
+
+        uint256 shares = vault.sharesOf(alice);
+        uint256 aliceBefore = alice.balance;
+
+        vm.prank(alice);
+        vault.withdraw(shares);
+
+        // Alice should get back all her ETH (no fees in this simple vault)
+        assertEq(alice.balance, aliceBefore + _amount);
+    }
+}
+
+/// @dev Helper: malicious contract that tries to re-enter SimpleVault.withdraw().
+contract MaliciousReceiver {
+    SimpleVault public vault;
+    bool public attacking;
+
+    constructor(SimpleVault _vault) {
+        vault = _vault;
+    }
+
+    function seedDeposit() external payable {
+        vault.deposit{value: msg.value}();
+    }
+
+    function attack() external {
+        attacking = true;
+        uint256 shares = vault.sharesOf(address(this));
+        vault.withdraw(shares);
+    }
+
+    receive() external payable {
+        if (attacking) {
+            attacking = false;
+            // Attempt re-entry unconditionally — vault.s_locked is still true here,
+            // so this call should be blocked by the nonReentrant modifier.
+            vault.withdraw(1);
+        }
+    }
+}
