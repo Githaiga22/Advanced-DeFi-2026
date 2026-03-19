@@ -84,3 +84,48 @@ If a function iterates over an array that can grow without bound, an attacker ca
 ```solidity
 // ❌ VULNERABLE — allBidders grows with every bid
 address[] public allBidders;
+
+function bid() external payable {
+    allBidders.push(msg.sender); // ← unbounded growth
+    ...
+}
+
+function finalise() external {
+    // ❌ O(n) loop — DoS when allBidders is large enough
+    for (uint256 i = 0; i < allBidders.length; i++) {
+        allBidders[i] = address(0);
+    }
+    ...
+}
+```
+
+### Fix: Pagination or Off-Chain Enumeration
+
+```solidity
+// ✅ Option 1: Remove the loop — use mappings instead
+mapping(address => uint256) public bids; // O(1) lookups
+
+// ✅ Option 2: Paginate if iteration is needed
+function finalise(uint256 _start, uint256 _end) external {
+    for (uint256 i = _start; i < _end && i < allBidders.length; i++) {
+        // process chunk
+    }
+}
+```
+
+---
+
+## Running the Exploit
+
+```bash
+forge test --match-path test/03_exploits/DoSExploit.t.sol -vvvv
+```
+
+---
+
+## Key Takeaways
+
+- **Never push ETH to arbitrary addresses** — always use pull-payment
+- **Never iterate over unbounded arrays** in state-changing functions
+- **Fail fast**: if an operation cannot be completed safely, make the failure loud and obvious
+- Pull-payment is the standard pattern for all ETH refunds in production DeFi
