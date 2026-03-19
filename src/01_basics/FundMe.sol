@@ -100,3 +100,56 @@ contract FundMe {
     function withdraw() external onlyOwner {
         uint256 balance = address(this).balance;
         if (balance == 0) revert FundMe__NothingToWithdraw();
+
+        // ── Checks + Effects ────────────────────────────────────────────────
+        // Reset all funder balances before any external call (CEI pattern).
+        uint256 funderCount = s_funders.length;
+        for (uint256 i = 0; i < funderCount; i++) {
+            s_addressToAmountFunded[s_funders[i]] = 0;
+        }
+        delete s_funders;
+
+        emit Withdrawn(i_owner, balance);
+
+        // ── Interaction ─────────────────────────────────────────────────────
+        // Low-level call forwards all gas and propagates failures.
+        (bool success,) = i_owner.call{value: balance}("");
+        require(success, "FundMe: ETH transfer failed");
+    }
+
+    // ─── View functions ────────────────────────────────────────────────────────
+
+    /// @notice Returns how much ETH a specific address has contributed.
+    /// @param _funder The funder's address.
+    /// @return The total funded amount in wei.
+    function getAmountFunded(address _funder) external view returns (uint256) {
+        return s_addressToAmountFunded[_funder];
+    }
+
+    /// @notice Returns the full list of funders.
+    function getFunders() external view returns (address[] memory) {
+        return s_funders;
+    }
+
+    /// @notice Returns the contract owner.
+    function getOwner() external view returns (address) {
+        return i_owner;
+    }
+
+    /// @notice Returns the contract's current ETH balance.
+    function getBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+
+    // ─── Receive / Fallback ────────────────────────────────────────────────────
+
+    /// @dev Plain ETH transfers route to fund().
+    receive() external payable {
+        fund();
+    }
+
+    /// @dev Calls with non-empty calldata that match nothing also route to fund().
+    fallback() external payable {
+        fund();
+    }
+}
