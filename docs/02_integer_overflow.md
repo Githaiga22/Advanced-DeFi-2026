@@ -62,3 +62,36 @@ function burn(uint256 _amount) external {
 // ✅ Option 2: Explicit check before unchecked (gas efficient + safe)
 function burn(uint256 _amount) external {
     require(balanceOf[msg.sender] >= _amount, "insufficient balance");
+    unchecked {
+        balanceOf[msg.sender] -= _amount; // safe — checked above
+        totalSupply -= _amount;
+    }
+}
+```
+
+---
+
+## Running the Exploit
+
+```bash
+forge test --match-path test/03_exploits/OverflowExploit.t.sol -vvvv
+```
+
+---
+
+## Historical Examples
+
+| Incident | Year | Loss |
+|---|---|---|
+| BEC Token | 2018 | $900M market cap destroyed |
+| BatchOverflow | 2018 | Multiple ERC-20 tokens |
+| PAID Network | 2021 | $160M (private key + overflow) |
+
+---
+
+## Key Takeaways
+
+- Default Solidity 0.8 protects you — don't fight it for "gas savings" on sensitive arithmetic
+- `unchecked {}` is safe ONLY when you've mathematically proven no overflow is possible
+- Always check external contracts' Solidity version — pre-0.8 code needs explicit SafeMath or manual guards
+- When auditing: search for `unchecked`, `assembly`, and hand-rolled arithmetic
