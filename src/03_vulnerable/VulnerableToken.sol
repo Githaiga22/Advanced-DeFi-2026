@@ -25,3 +25,31 @@ contract VulnerableToken {
     event Transfer(address indexed from, address indexed to, uint256 value);
 
     // ─── State ─────────────────────────────────────────────────────────────────
+
+    string public name = "VulnerableToken";
+    string public symbol = "VULN";
+    uint8 public decimals = 18;
+    uint256 public totalSupply;
+
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    // ─── Constructor ───────────────────────────────────────────────────────────
+
+    constructor(uint256 _initialSupply) {
+        totalSupply = _initialSupply * 1e18;
+        balanceOf[msg.sender] = totalSupply;
+        emit Transfer(address(0), msg.sender, totalSupply);
+    }
+
+    // ─── Functions ─────────────────────────────────────────────────────────────
+
+    function transfer(address _to, uint256 _amount) external returns (bool) {
+        require(_to != address(0), "zero address");
+        // ❌ unchecked disables overflow protection on subtraction
+        unchecked {
+            balanceOf[msg.sender] -= _amount;
+            balanceOf[_to] += _amount;
+        }
+        emit Transfer(msg.sender, _to, _amount);
+        return true;
