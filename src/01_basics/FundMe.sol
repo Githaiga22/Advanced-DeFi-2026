@@ -49,3 +49,54 @@ contract FundMe {
     uint256 public constant MINIMUM_ETH = 0.01 ether;
 
     // ─── State ─────────────────────────────────────────────────────────────────
+
+    /// @dev The address that deployed this contract.
+    address private immutable i_owner;
+
+    /// @dev Tracks each address's total funded amount.
+    mapping(address => uint256) private s_addressToAmountFunded;
+
+    /// @dev Ordered list of unique funders (for iteration during withdrawal).
+    address[] private s_funders;
+
+    // ─── Constructor ───────────────────────────────────────────────────────────
+
+    constructor() {
+        i_owner = msg.sender;
+    }
+
+    // ─── Modifiers ─────────────────────────────────────────────────────────────
+
+    modifier onlyOwner() {
+        if (msg.sender != i_owner) revert FundMe__NotOwner();
+        _;
+    }
+
+    // ─── External / public functions ───────────────────────────────────────────
+
+    /// @notice Send ETH to fund this contract.
+    /// @dev    Reverts if msg.value < MINIMUM_ETH.
+    ///         First-time funders are added to s_funders for bookkeeping.
+    function fund() public payable {
+        if (msg.value < MINIMUM_ETH) {
+            revert FundMe__BelowMinimum(msg.value, MINIMUM_ETH);
+        }
+
+        console2.log("FundMe.fund: funder=%s amount=%d", msg.sender, msg.value);
+
+        // Track first-time funders
+        if (s_addressToAmountFunded[msg.sender] == 0) {
+            s_funders.push(msg.sender);
+        }
+
+        s_addressToAmountFunded[msg.sender] += msg.value;
+
+        emit Funded(msg.sender, msg.value);
+    }
+
+    /// @notice Withdraw all ETH to the owner.
+    /// @dev    Pull-payment pattern — only owner can trigger.
+    ///         CEI: state cleared before external call.
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        if (balance == 0) revert FundMe__NothingToWithdraw();
