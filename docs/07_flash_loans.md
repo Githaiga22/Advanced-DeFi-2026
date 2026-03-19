@@ -71,3 +71,41 @@ Flash loans amplify existing vulnerabilities. Common attack chains:
 
 | Defense | How It Works |
 |---|---|
+| TWAP oracles | Price averaged over time — single-block manipulation has minimal effect |
+| Governance time locks | Proposals can't execute immediately — flash loan votes become worthless |
+| Snapshot-based voting | Voting weight locked at proposal creation block |
+| Flash loan fees | Small fee makes large-scale attacks less profitable |
+| Same-tx borrowing lock | Block the same address from borrowing and interacting in one tx |
+
+---
+
+## Flash Loan Providers
+
+| Protocol | Chain | Fee |
+|---|---|---|
+| Aave v3 | Multi-chain | 0.05% |
+| Uniswap v3 | Multi-chain | 0.05–1% |
+| dYdX | Ethereum | 0% |
+| Balancer | Multi-chain | 0% |
+
+---
+
+## Real-World Flash Loan Exploits
+
+| Incident | Year | Loss | Attack Vector |
+|---|---|---|---|
+| bZx Attack | 2020 | $350K | Oracle manipulation |
+| Harvest Finance | 2020 | $34M | Price manipulation |
+| Cream Finance | 2021 | $130M | Reentrancy + flash loan |
+| Mango Markets | 2022 | $117M | Oracle manipulation |
+| Euler Finance | 2023 | $197M | Logic error + flash loan |
+
+---
+
+## Key Takeaways
+
+- Flash loans don't create vulnerabilities — they **amplify existing ones**
+- Any vulnerability that becomes worse with unlimited capital is flash-loan-exploitable
+- TWAP oracles are the primary defense against price-based flash loan attacks
+- Time locks on governance neutralize flash loan vote attacks
+- Understanding flash loans is essential for advanced DeFi auditing
