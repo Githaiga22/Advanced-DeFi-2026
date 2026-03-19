@@ -131,3 +131,73 @@ forge inspect src/01_basics/SimpleStorage.sol:SimpleStorage storageLayout
 Output:
 ```json
 {
+  "storage": [
+    {
+      "label": "s_storedValues",
+      "slot": "0",
+      "type": "mapping(address => uint256)"
+    }
+  ]
+}
+```
+
+Use this when debugging proxy contracts, upgrades, or slot collision attacks.
+
+---
+
+## 7. Replaying Historical Transactions
+
+```bash
+# Replay any transaction from mainnet (requires archive node)
+cast run <TX_HASH> --rpc-url $MAINNET_RPC --verbose
+```
+
+This gives you a full trace of what happened in any historical transaction — incredibly useful for studying real exploits.
+
+---
+
+## 8. Common Revert Reasons Table
+
+| Revert Message | Likely Cause |
+|---|---|
+| `"not owner"` | Calling a privileged function without owner role |
+| `"transfer failed"` | ETH transfer to a contract without `receive()` |
+| `"reentrant call"` | Reentrancy guard triggered |
+| `"arithmetic overflow"` | Subtraction underflow or addition overflow |
+| `"insufficient balance"` | Trying to transfer/burn more than balance |
+| `"already initialized"` | Calling `initialize()` twice on a proxy |
+| `EvmError: Revert` (no message) | Bare `revert()`, failed assertion, or out-of-gas |
+
+---
+
+## 9. Useful Cheatcodes Quick Reference
+
+```solidity
+// Time manipulation
+vm.warp(block.timestamp + 1 days);
+
+// Block number
+vm.roll(block.number + 100);
+
+// Impersonate any address
+vm.prank(alice);          // next call only
+vm.startPrank(alice);     // all calls until stopPrank
+vm.stopPrank();
+
+// Fund any address
+vm.deal(alice, 10 ether);
+
+// Set storage directly
+vm.store(address(contract), bytes32(slot), bytes32(value));
+
+// Expect a revert
+vm.expectRevert("error message");
+vm.expectRevert(MyContract.MyError.selector);
+
+// Expect an event
+vm.expectEmit(true, true, false, true);
+emit MyEvent(arg1, arg2);
+
+// Label addresses (shows in traces)
+vm.label(alice, "alice");
+```
