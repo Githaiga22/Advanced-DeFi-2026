@@ -131,3 +131,73 @@ that re-enters `withdraw()` repeatedly, draining the bank.
 See: test/03_exploits/ReentrancyExploit.t.sol
 
 ### Impact
+All deposited ETH can be stolen in a single transaction. Legitimate users lose all funds.
+
+### Recommended Fix
+Apply the Checks-Effects-Interactions pattern: zero the balance BEFORE making the
+external call. Optionally add a `nonReentrant` mutex modifier.
+
+```solidity
+function withdraw() external nonReentrant {
+    uint256 amount = balances[msg.sender];
+    require(amount > 0);
+    balances[msg.sender] = 0;    // ← effect first
+    (bool ok,) = msg.sender.call{value: amount}(""); // ← then interact
+    require(ok);
+}
+```
+```
+
+### Severity Levels
+
+| Severity | Definition |
+|---|---|
+| Critical | Funds can be stolen / contract destroyed |
+| High | Significant loss of funds or protocol malfunction |
+| Medium | Limited fund loss, access control issues |
+| Low | Best practice violations, unlikely exploits |
+| Informational | Style, gas, documentation |
+
+---
+
+## Phase 5 — Verification
+
+After the developer implements fixes:
+
+```bash
+# 1. Re-run all tests — must still pass
+forge test -vvv
+
+# 2. Run the original exploit test — must now FAIL (exploit blocked)
+forge test --match-path test/03_exploits/ReentrancyExploit.t.sol -vvvv
+
+# 3. Run coverage again — ensure fix doesn't leave gaps
+forge coverage
+
+# 4. Re-run static analysis
+slither .
+
+# 5. Confirm the fix doesn't introduce new vulnerabilities
+```
+
+---
+
+## Competitive Audit Platforms
+
+| Platform | Format | Rewards |
+|---|---|---|
+| **CodeHawks** (Cyfrin) | Competitive + private | USDC prizes |
+| **Code4rena** | Competitive (wardens) | USDC prizes |
+| **Sherlock** | Competitive + judging | USDC prizes |
+| **Immunefi** | Private bug bounty | Up to $10M |
+| **HackerOne** | Bug bounty programs | Varies |
+
+---
+
+## Key Takeaways
+
+- Reconnaissance before code — understand the *intent* first
+- Automated tools are helpers, not replacements for manual review
+- Write PoC exploit tests — they prove impact and confirm fixes
+- A finding without a PoC is an unconfirmed theory
+- Verification phase is as important as the discovery phase
