@@ -80,3 +80,46 @@ contract Phisher {
 modifier onlyOwner() {
     require(msg.sender == owner, "not owner"); // ← phishing-safe
     _;
+}
+```
+
+---
+
+## Ownership Transfer Best Practice
+
+```solidity
+// ❌ Dangerous — one-step transfer (typo = permanent loss)
+function transferOwnership(address _new) external onlyOwner {
+    owner = _new;
+}
+
+// ✅ Safe — two-step transfer (new owner must accept)
+function transferOwnership(address _pending) external onlyOwner {
+    pendingOwner = _pending;
+}
+
+function acceptOwnership() external {
+    require(msg.sender == pendingOwner, "not pending owner"); // ← msg.sender!
+    owner = pendingOwner;
+    pendingOwner = address(0);
+}
+```
+
+---
+
+## Unprotected selfdestruct
+
+Never leave `selfdestruct` in a reachable path. If you must include it:
+- Guard with `msg.sender == owner`
+- Add a timelock or multisig requirement
+- Consider removing it entirely — `selfdestruct` behaviour is changing in EIP-6780
+
+---
+
+## Key Audit Checklist
+
+- [ ] Every privileged function uses `msg.sender`, not `tx.origin`
+- [ ] `initialize()` functions are protected against re-initialization
+- [ ] Ownership transfer is two-step (offer + accept)
+- [ ] `selfdestruct` is either absent or heavily guarded
+- [ ] Role-based access uses a well-audited library (OpenZeppelin AccessControl)
