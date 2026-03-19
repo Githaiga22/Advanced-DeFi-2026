@@ -47,3 +47,52 @@ contract Challenge_Governance {
     uint256 public proposalCount;
     uint256 public quorum = 100e18; // 100 tokens needed
     uint256 public votingPeriod = 3 days;
+
+    mapping(uint256 => Proposal) public proposals;
+    mapping(address => uint256) public tokenBalance; // simplified token ledger
+
+    // ─── Constructor ───────────────────────────────────────────────────────────
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    // ─── Admin ─────────────────────────────────────────────────────────────────
+
+    function grantTokens(address _to, uint256 _amount) external {
+        require(msg.sender == owner, "Gov: not owner");
+        tokenBalance[_to] += _amount;
+    }
+
+    // ─── Governance ────────────────────────────────────────────────────────────
+
+    /// @notice Create a governance proposal.
+    function propose(string calldata _description, address _target, bytes calldata _callData)
+        external
+        returns (uint256 id)
+    {
+        require(tokenBalance[msg.sender] >= 1e18, "Gov: insufficient tokens to propose");
+        id = proposalCount++;
+        Proposal storage p = proposals[id];
+        p.proposer = msg.sender;
+        p.description = _description;
+        p.target = _target;
+        p.callData = _callData;
+        p.deadline = block.timestamp + votingPeriod;
+        emit ProposalCreated(id, msg.sender, _description);
+    }
+
+    /// @notice Vote on a proposal.
+    /// @dev    Bug 1: voting weight is read at vote time — flash loan attack possible.
+    ///         An attacker can borrow tokens, vote with huge weight, repay in same tx.
+    function vote(uint256 _id, bool _support) external {
+        Proposal storage p = proposals[_id];
+        require(block.timestamp < p.deadline, "Gov: voting ended");
+        require(!p.hasVoted[msg.sender], "Gov: already voted");
+
+        // Bug 1: snapshot not taken at proposal creation — current balance used
+        uint256 weight = tokenBalance[msg.sender];
+        require(weight > 0, "Gov: no voting power");
+
+        p.hasVoted[msg.sender] = true;
+
