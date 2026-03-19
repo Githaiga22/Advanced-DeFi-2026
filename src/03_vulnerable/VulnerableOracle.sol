@@ -36,3 +36,41 @@ contract MockAMM {
         tokensOut = reserveToken - newReserveToken;
         reserveETH = newReserveETH;
         reserveToken = newReserveToken;
+    }
+
+    /// @notice Swap tokens back for ETH.
+    function swapTokensForETH(uint256 _tokenAmount) external returns (uint256 ethOut) {
+        uint256 k = reserveETH * reserveToken;
+        uint256 newReserveToken = reserveToken + _tokenAmount;
+        uint256 newReserveETH = k / newReserveToken;
+        ethOut = reserveETH - newReserveETH;
+        reserveETH = newReserveETH;
+        reserveToken = newReserveToken;
+        (bool ok,) = msg.sender.call{value: ethOut}("");
+        require(ok, "MockAMM: ETH transfer failed");
+    }
+
+    receive() external payable {}
+}
+
+/// @title VulnerableOracle
+/// @author Allan Robinson
+/// @notice A lending protocol that uses the AMM's spot price to determine
+///         how much a user can borrow.
+/// @dev    WARNING (for auditors): The protocol reads the spot price directly
+///         from the AMM in the same transaction as the loan. An attacker can:
+///           1. Take a large "flash-swap" to inflate the AMM price.
+///           2. Call borrow() while the price is inflated → receive far more than fair value.
+///           3. Reverse the swap in the same transaction.
+///         This is a classic price oracle manipulation / flash loan attack.
+///         See docs/08_price_oracle_manipulation.md for the full explanation and fixes.
+contract VulnerableOracle {
+    // ─── State ─────────────────────────────────────────────────────────────────
+
+    MockAMM public amm;
+    mapping(address => uint256) public tokenDeposits;
+    mapping(address => uint256) public ethBorrowed;
+
+    // ─── Constructor ───────────────────────────────────────────────────────────
+
+    constructor(address _amm) {
