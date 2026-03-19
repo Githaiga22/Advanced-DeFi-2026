@@ -83,3 +83,47 @@ contract ERC20TokenTest is Test {
         assertEq(token.balanceOf(bob), amount);
         assertEq(token.allowance(owner, alice), 0);
     }
+
+    function test_TransferFromRevertsInsufficientAllowance() public {
+        vm.prank(owner);
+        token.approve(alice, 50 * DECIMALS_FACTOR);
+
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC20Token.ERC20__InsufficientAllowance.selector, 50 * DECIMALS_FACTOR, 100 * DECIMALS_FACTOR)
+        );
+        token.transferFrom(owner, bob, 100 * DECIMALS_FACTOR);
+    }
+
+    // ─── mint() / burn() ───────────────────────────────────────────────────────
+
+    function test_MintByOwner() public {
+        uint256 mintAmount = 500 * DECIMALS_FACTOR;
+        vm.prank(owner);
+        token.mint(alice, mintAmount);
+        assertEq(token.balanceOf(alice), mintAmount);
+        assertEq(token.totalSupply(), (INITIAL_SUPPLY * DECIMALS_FACTOR) + mintAmount);
+    }
+
+    function test_MintRevertsForNonOwner() public {
+        vm.prank(alice);
+        vm.expectRevert(ERC20Token.ERC20__NotOwner.selector);
+        token.mint(alice, 1);
+    }
+
+    function test_BurnByOwner() public {
+        uint256 burnAmount = 100 * DECIMALS_FACTOR;
+        vm.prank(owner);
+        token.burn(owner, burnAmount);
+        assertEq(token.totalSupply(), (INITIAL_SUPPLY * DECIMALS_FACTOR) - burnAmount);
+    }
+
+    // ─── Fuzz ──────────────────────────────────────────────────────────────────
+
+    function testFuzz_Transfer(uint256 _amount) public {
+        vm.assume(_amount > 0 && _amount <= INITIAL_SUPPLY * DECIMALS_FACTOR);
+        vm.prank(owner);
+        token.transfer(alice, _amount);
+        assertEq(token.balanceOf(alice), _amount);
+    }
+}
