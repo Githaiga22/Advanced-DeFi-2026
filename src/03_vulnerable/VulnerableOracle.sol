@@ -74,3 +74,43 @@ contract VulnerableOracle {
     // ─── Constructor ───────────────────────────────────────────────────────────
 
     constructor(address _amm) {
+        amm = MockAMM(payable(_amm));
+    }
+
+    // ─── Functions ─────────────────────────────────────────────────────────────
+
+    /// @notice Deposit tokens as collateral.
+    function depositCollateral(uint256 _amount) external {
+        tokenDeposits[msg.sender] += _amount;
+    }
+
+    /// @notice Borrow ETH against your token collateral.
+    /// @dev    BUG: Reads spot price from the AMM — easily manipulated in the same tx.
+    ///         Borrow limit = collateral * spotPrice / 1e18.
+    function borrow(uint256 _tokenAmount) external {
+        require(tokenDeposits[msg.sender] >= _tokenAmount, "VulnerableOracle: insufficient collateral");
+
+        // ❌ Spot price read — can be inflated by a large AMM swap in the same transaction
+        uint256 tokensPerETH = amm.getTokensPerETH();
+        require(tokensPerETH > 0, "VulnerableOracle: oracle unavailable");
+
+        // ethValue = tokenAmount / tokensPerETH * 1e18
+        uint256 ethValue = (_tokenAmount * 1e18) / tokensPerETH;
+
+        require(address(this).balance >= ethValue, "VulnerableOracle: insufficient liquidity");
+
+        tokenDeposits[msg.sender] -= _tokenAmount;
+        ethBorrowed[msg.sender] += ethValue;
+
+        (bool ok,) = msg.sender.call{value: ethValue}("");
+        require(ok, "VulnerableOracle: ETH transfer failed");
+    }
+
+    /// @notice Repay borrowed ETH.
+    function repay() external payable {
+        require(ethBorrowed[msg.sender] >= msg.value, "VulnerableOracle: overpayment");
+        ethBorrowed[msg.sender] -= msg.value;
+    }
+
+    receive() external payable {}
+}
