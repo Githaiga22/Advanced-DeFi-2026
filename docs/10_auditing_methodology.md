@@ -64,3 +64,70 @@ myth analyze src/MyContract.sol
 - Business logic bugs
 - Economic exploits
 - Protocol-level design flaws
+
+---
+
+## Phase 3 — Manual Review Checklist
+
+Work through every function systematically:
+
+### Reentrancy
+- [ ] Does the function make external calls?
+- [ ] Is all state updated BEFORE external calls? (CEI pattern)
+- [ ] Is there a reentrancy guard?
+
+### Access Control
+- [ ] Is `msg.sender` used (not `tx.origin`)?
+- [ ] Are all privileged functions protected?
+- [ ] Is ownership transfer two-step?
+- [ ] Can `initialize()` be called twice?
+
+### Integer Math
+- [ ] Any `unchecked {}` blocks? Are they safe?
+- [ ] Potential precision loss from division before multiplication?
+- [ ] Correct token decimal scaling?
+
+### Oracles
+- [ ] Is the price from a spot source? (Can be manipulated)
+- [ ] Is there a staleness check on Chainlink feeds?
+- [ ] Are TWAP windows long enough?
+
+### DoS
+- [ ] Any unbounded loops over storage arrays?
+- [ ] Any push-payments to arbitrary addresses?
+- [ ] Can the contract be locked if one address reverts?
+
+### Economic Logic
+- [ ] Are the protocol's invariants preserved?
+- [ ] Can someone profit by making the protocol perform worse?
+- [ ] Flash loan attack surface?
+
+### Front-Running
+- [ ] Are there slippage parameters on DEX operations?
+- [ ] Are there deadline parameters on time-sensitive operations?
+- [ ] Should any function use a commit-reveal scheme?
+
+---
+
+## Phase 4 — Writing the Report
+
+Use this format for each finding:
+
+```markdown
+## [H-01] Reentrancy in VulnerableBank.withdraw()
+
+**Severity:** High
+**Contract:** VulnerableBank.sol
+**Function:** withdraw()
+
+### Description
+The `withdraw()` function makes an external ETH transfer via `call` BEFORE zeroing
+the caller's balance. An attacker can deploy a contract with a malicious `receive()`
+that re-enters `withdraw()` repeatedly, draining the bank.
+
+### Proof of Concept
+```forge test --match-test test_ReentrancyDrainsBank -vvvv```
+
+See: test/03_exploits/ReentrancyExploit.t.sol
+
+### Impact
