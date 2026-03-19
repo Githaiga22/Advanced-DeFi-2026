@@ -75,3 +75,44 @@ contract SecureLottery is VRFConsumerBaseV2 {
         uint256 winnerIndex = randomWords[0] % players.length;
         winner = players[winnerIndex];
     }
+}
+```
+
+### For Timing: Buffer Zone
+
+```solidity
+// ✅ Add meaningful buffers (not just seconds)
+// For any timing check where ±30 seconds doesn't matter, block.timestamp is fine
+// For lotteries, auctions, flash-loan same-block windows: use VRF or commitments
+```
+
+---
+
+## What CAN You Use block.timestamp For Safely?
+
+- Staking reward calculations (a few seconds don't matter)
+- Rate limiting (cooldowns of hours/days)
+- Lock expiry (multi-day locks)
+
+**Not safe for:** randomness, exclusive same-block windows, precise second-level timing.
+
+---
+
+## Other Weak Randomness Sources (Never Use These)
+
+```solidity
+// ❌ All of these are predictable or manipulable:
+blockhash(block.number - 1)  // Known before tx is mined
+block.prevrandao              // Partially biasable by validators
+msg.sender                    // Attacker chooses their address
+tx.gasprice                   // Attacker sets this
+```
+
+---
+
+## Key Takeaways
+
+- `block.timestamp` is manipulable by ±15 seconds — never use for randomness
+- Use **Chainlink VRF** for on-chain randomness needs
+- Use **commit-reveal** for games where VRF is overkill
+- Timing checks with large windows (hours, days) are safe with `block.timestamp`
