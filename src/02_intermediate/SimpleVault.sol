@@ -97,3 +97,54 @@ contract SimpleVault {
     }
 
     // ─── View functions ────────────────────────────────────────────────────────
+
+    /// @notice Returns the ETH balance backing all shares.
+    function totalAssets() public view returns (uint256) {
+        return address(this).balance;
+    }
+
+    /// @notice Returns the total shares issued.
+    function getTotalShares() external view returns (uint256) {
+        return s_totalShares;
+    }
+
+    /// @notice Returns the share balance of `_user`.
+    function sharesOf(address _user) external view returns (uint256) {
+        return s_shares[_user];
+    }
+
+    /// @notice Preview how many shares `_ethAmount` wei would yield.
+    function previewDeposit(uint256 _ethAmount) external view returns (uint256) {
+        return _convertToShares(_ethAmount);
+    }
+
+    /// @notice Preview how much ETH redeeming `_shares` would yield.
+    function previewWithdraw(uint256 _shares) external view returns (uint256) {
+        return _convertToAssets(_shares);
+    }
+
+    // ─── Internal ──────────────────────────────────────────────────────────────
+
+    /// @dev Convert an ETH amount to vault shares.
+    ///      First deposit: 1 share per wei (seeding the pool).
+    ///      Subsequent: shares = (ethAmount * totalShares) / totalAssets.
+    ///      NOTE: balance already includes msg.value at this point, so we subtract it.
+    function _convertToShares(uint256 _ethAmount) internal view returns (uint256) {
+        uint256 supply = s_totalShares;
+        // totalAssets() includes msg.value already in deposit(); subtract it for ratio.
+        uint256 assets = address(this).balance - _ethAmount;
+
+        if (supply == 0 || assets == 0) {
+            return _ethAmount; // 1:1 seed
+        }
+        return (_ethAmount * supply) / assets;
+    }
+
+    /// @dev Convert vault shares to the proportional ETH amount.
+    ///      ethAmount = (shares / totalShares) * totalAssets.
+    function _convertToAssets(uint256 _shares) internal view returns (uint256) {
+        uint256 supply = s_totalShares;
+        if (supply == 0) return 0;
+        return (_shares * address(this).balance) / supply;
+    }
+}
