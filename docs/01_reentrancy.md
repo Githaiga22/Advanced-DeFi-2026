@@ -81,3 +81,46 @@ modifier nonReentrant() {
     locked = false;
 }
 
+function withdraw() external nonReentrant {
+    uint256 amount = balances[msg.sender];
+    require(amount > 0, "nothing to withdraw");
+
+    // EFFECT first ← state zeroed before any external call
+    balances[msg.sender] = 0;
+
+    // INTERACTION last
+    (bool success,) = msg.sender.call{value: amount}("");
+    require(success);
+}
+```
+
+---
+
+## Running the Exploit
+
+```bash
+# See the recursive call tree
+forge test --match-path test/03_exploits/ReentrancyExploit.t.sol -vvvv
+```
+
+Look for the indented, repeating `VulnerableBank::withdraw()` calls in the trace.
+
+---
+
+## Real-World Examples
+
+| Incident | Year | Loss |
+|---|---|---|
+| The DAO Hack | 2016 | ~$60M |
+| Cream Finance | 2021 | $130M |
+| Siren Protocol | 2021 | $3.5M |
+| Ola Finance | 2022 | $3.6M |
+
+---
+
+## Key Takeaways
+
+- Always follow CEI order: Checks → Effects → Interactions
+- Use `nonReentrant` modifiers for any function that sends ETH
+- Cross-function reentrancy is possible too (e.g., `deposit()` re-entered from `withdraw()`)
+- OpenZeppelin's `ReentrancyGuard` is production-ready — use it after understanding this manual version
