@@ -24,3 +24,29 @@ pragma solidity ^0.8.13;
 ///         Bug 2 — Unprotected selfdestruct:
 ///           The destroy() function calls selfdestruct(owner). It is only
 ///           guarded by the tx.origin check (Bug 1), so an attacker who exploits
+///           Bug 1 can permanently destroy this contract and steal all its ETH.
+///
+///         See docs/03_access_control.md for the full explanation and fixes.
+contract VulnerableAccessControl {
+    // ─── Events ────────────────────────────────────────────────────────────────
+
+    event FundsWithdrawn(address indexed to, uint256 amount);
+    event ContractDestroyed(address indexed by);
+
+    // ─── State ─────────────────────────────────────────────────────────────────
+
+    address public owner;
+    mapping(address => bool) public admins;
+
+    // ─── Constructor ───────────────────────────────────────────────────────────
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    // ─── Modifiers ─────────────────────────────────────────────────────────────
+
+    /// @dev BUG: uses tx.origin instead of msg.sender.
+    modifier onlyOwner() {
+        // ❌ tx.origin — phishing attack vector
+        require(tx.origin == owner, "VulnerableAccessControl: not owner");
