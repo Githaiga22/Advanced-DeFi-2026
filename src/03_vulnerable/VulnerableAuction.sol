@@ -58,3 +58,35 @@ contract VulnerableAuction {
     function bid() external payable {
         require(block.timestamp < auctionEndTime, "VulnerableAuction: auction ended");
         require(msg.value > highestBid, "VulnerableAuction: bid too low");
+
+        if (highestBidder != address(0)) {
+            // ❌ Push-payment to previous bidder — can be blocked by reverting receive()
+            (bool success,) = highestBidder.call{value: highestBid}("");
+            require(success, "VulnerableAuction: refund failed");
+        }
+
+        allBidders.push(msg.sender); // ❌ grows unboundedly (Bug 2)
+        highestBidder = msg.sender;
+        highestBid = msg.value;
+
+        emit NewHighBid(msg.sender, msg.value);
+    }
+
+    /// @notice End the auction and pay the owner.
+    /// @dev    BUG: unbounded loop — can exceed block gas limit with many bidders.
+    function finalise() external {
+        require(block.timestamp >= auctionEndTime, "VulnerableAuction: still running");
+        require(!ended, "VulnerableAuction: already finalised");
+        ended = true;
+
+        // ❌ Unbounded loop — gas cost grows linearly with allBidders.length
+        for (uint256 i = 0; i < allBidders.length; i++) {
+            allBidders[i] = address(0); // "clearing" records (does nothing useful)
+        }
+
+        emit AuctionEnded(highestBidder, highestBid);
+
+        (bool success,) = owner.call{value: highestBid}("");
+        require(success, "VulnerableAuction: payout failed");
+    }
+}
