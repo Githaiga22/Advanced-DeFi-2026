@@ -35,3 +35,40 @@ Validators can reorder transactions within their block to maximize MEV.
 ## Vulnerable Patterns
 
 ### Approve + TransferFrom (ERC-20 Race Condition)
+
+```solidity
+// ❌ VULNERABLE — double-spend window
+approve(spender, 100);  // user sets allowance to 100
+// Spender front-runs here, drains 100 tokens
+approve(spender, 200);  // user updates to 200
+// Spender can now spend 200 more (stole 100 extra)
+```
+
+**Fix:** Use `increaseAllowance` / `decreaseAllowance` or set allowance to 0 first.
+
+### Slippage in DEX Trades
+
+```solidity
+// ❌ VULNERABLE — no slippage protection
+function swap(uint256 amountIn) external {
+    uint256 amountOut = calculateOutput(amountIn); // no min check
+    // Sandwich attacker can front-run and reduce amountOut to near 0
+    ...
+}
+
+// ✅ FIXED — require minimum output
+function swap(uint256 amountIn, uint256 minAmountOut) external {
+    uint256 amountOut = calculateOutput(amountIn);
+    require(amountOut >= minAmountOut, "slippage exceeded");
+    ...
+}
+```
+
+---
+
+## Mitigations
+
+| Technique | How It Helps |
+|---|---|
+| Slippage parameters | User sets acceptable price range |
+| Commit-reveal scheme | Hide inputs until after commitment |
