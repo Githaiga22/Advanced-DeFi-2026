@@ -64,3 +64,70 @@ When a fuzz test fails, Foundry shows the counterexample:
 Counterexample:
     args: [115792089237316195423570985008687907853269984665640564039457584007913129639935]
 ```
+The counterexample is the exact input that caused failure. Use `vm.assume()` to exclude invalid inputs:
+```solidity
+function testFuzz_Transfer(uint256 _amount) public {
+    vm.assume(_amount > 0);
+    vm.assume(_amount <= token.balanceOf(owner));
+    ...
+}
+```
+
+Or use `bound()` for range restriction:
+```solidity
+_amount = bound(_amount, 1, token.balanceOf(owner));
+```
+
+---
+
+## 4. console2.log Debugging
+
+`console2.log` only runs inside the Forge test environment (no-op in production).
+
+```solidity
+import {console2} from "forge-std/console2.sol";
+
+// Supported signatures:
+console2.log("message");
+console2.log("uint value:", myUint);
+console2.log("address:", myAddress);
+console2.log("bool:", myBool);
+console2.log("Before: %d, After: %d", before, after);  // formatted
+```
+
+Logs appear in test output when using `-vv` or higher verbosity.
+
+---
+
+## 5. Gas Analysis
+
+```bash
+# See gas used per function
+forge test --gas-report
+
+# Snapshot current gas costs
+forge snapshot
+
+# Check if any gas costs changed
+forge snapshot --check
+```
+
+Example gas report:
+```
+| Contract     | Function  | min  | avg  | median | max  | # calls |
+|---|---|---|---|---|---|---|
+| SimpleVault  | deposit   | 5421 | 5421 | 5421   | 5421 | 5       |
+| SimpleVault  | withdraw  | 3210 | 3210 | 3210   | 3210 | 3       |
+```
+
+---
+
+## 6. Storage Layout Inspection
+
+```bash
+forge inspect src/01_basics/SimpleStorage.sol:SimpleStorage storageLayout
+```
+
+Output:
+```json
+{
