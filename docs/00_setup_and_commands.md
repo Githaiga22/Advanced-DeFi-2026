@@ -85,3 +85,90 @@ FOUNDRY_PROFILE=ci forge test
 # Show gas report for all functions
 forge test --gas-report
 
+# Save a gas snapshot (baseline for comparison)
+forge snapshot
+
+# Compare against snapshot (shows +/- gas changes)
+forge snapshot --check
+```
+
+---
+
+## Code Coverage
+
+```bash
+# Generate coverage report
+forge coverage
+
+# Generate LCOV report (for HTML viewing)
+forge coverage --report lcov
+genhtml lcov.info --output-dir coverage/
+open coverage/index.html
+```
+
+---
+
+## Formatting
+
+```bash
+# Format all Solidity files
+forge fmt
+
+# Check formatting without changing files (used in CI)
+forge fmt --check
+```
+
+---
+
+## Local Blockchain (Anvil)
+
+```bash
+# Start a local Ethereum node (forks mainnet state)
+anvil
+
+# Fork mainnet at a specific block
+anvil --fork-url $MAINNET_RPC --fork-block-number 19000000
+
+# Start with custom chain ID and block time
+anvil --chain-id 31337 --block-time 12
+
+# Pre-funded accounts are printed at startup
+# Default private key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+```
+
+---
+
+## Deployment Scripts
+
+```bash
+# Dry-run (no broadcast — just simulate)
+forge script script/Deploy.s.sol -vvvv
+
+# Deploy to local Anvil
+forge script script/Deploy.s.sol \
+  --rpc-url http://localhost:8545 \
+  --broadcast \
+  -vvvv
+
+# Deploy to a testnet (e.g. Sepolia)
+forge script script/Deploy.s.sol \
+  --rpc-url $SEPOLIA_RPC_URL \
+  --private-key $PRIVATE_KEY \
+  --broadcast \
+  --verify \
+  --etherscan-api-key $ETHERSCAN_KEY \
+  -vvvv
+```
+
+---
+
+## Cast — Interacting with Contracts
+
+```bash
+# Call a read-only function
+cast call <CONTRACT_ADDRESS> "balanceOf(address)(uint256)" <WALLET_ADDRESS> \
+  --rpc-url http://localhost:8545
+
+# Send a transaction
+cast send <CONTRACT_ADDRESS> "deposit()" \
+  --value 1ether \
