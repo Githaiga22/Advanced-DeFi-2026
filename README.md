@@ -52,3 +52,58 @@ Run with full traces to see the attack happening in real time:
 
 ```bash
 forge test --match-path test/03_exploits/ReentrancyExploit.t.sol -vvvv
+```
+
+### Bug Bounty Challenges
+
+```
+challenges/
+├── 01_easy/     — 1 hidden bug each (100–150 pts)
+├── 02_medium/   — 2 hidden bugs each (150–250 pts)
+└── 03_hard/     — 3+ hidden bugs each (300–525 pts)
+```
+
+Each challenge contract looks like real production code. Find the bugs, write a report, and submit for scoring. See [`challenges/README.md`](challenges/README.md) for rules.
+
+### Documentation
+
+```
+docs/
+├── 00_setup_and_commands.md      — every forge / cast / anvil command you need
+├── 01_reentrancy.md
+├── 02_integer_overflow.md
+├── 03_access_control.md
+├── 04_dos_attack.md
+├── 05_front_running.md
+├── 06_timestamp_dependence.md
+├── 07_flash_loans.md
+├── 08_price_oracle_manipulation.md
+├── 09_debugging_guide.md
+├── 10_auditing_methodology.md
+└── 11_cyfrin_updraft_resources.md
+```
+
+---
+
+## Quick Start
+
+```bash
+# Install Foundry
+curl -L https://foundry.paradigm.xyz | bash && foundryup
+
+# Clone and build
+git clone <this-repo>
+cd basic-solc-project
+forge build
+
+# Run all tests
+forge test -vvv
+
+# See a reentrancy attack live with full call traces
+forge test --match-path test/03_exploits/ReentrancyExploit.t.sol -vvvv
+```
+
+---
+
+## Vulnerability Coverage
+
