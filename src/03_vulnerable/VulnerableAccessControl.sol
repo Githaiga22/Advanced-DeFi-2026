@@ -50,3 +50,31 @@ contract VulnerableAccessControl {
     modifier onlyOwner() {
         // ❌ tx.origin — phishing attack vector
         require(tx.origin == owner, "VulnerableAccessControl: not owner");
+        _;
+    }
+
+    // ─── Functions ─────────────────────────────────────────────────────────────
+
+    /// @notice Add an admin address.
+    function addAdmin(address _admin) external onlyOwner {
+        admins[_admin] = true;
+    }
+
+    /// @notice Withdraw all ETH to a target address.
+    function withdrawFunds(address payable _to) external onlyOwner {
+        uint256 balance = address(this).balance;
+        emit FundsWithdrawn(_to, balance);
+        (bool ok,) = _to.call{value: balance}("");
+        require(ok, "VulnerableAccessControl: transfer failed");
+    }
+
+    /// @notice Destroy the contract and send all ETH to owner.
+    /// @dev    BUG: guarded only by the broken tx.origin check.
+    ///         An attacker exploiting Bug 1 can call this and brick the contract.
+    function destroy() external onlyOwner {
+        emit ContractDestroyed(tx.origin);
+        selfdestruct(payable(owner)); // ❌ reachable via phishing
+    }
+
+    receive() external payable {}
+}
