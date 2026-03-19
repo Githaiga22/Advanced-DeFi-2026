@@ -96,3 +96,54 @@ contract Challenge_Governance {
 
         p.hasVoted[msg.sender] = true;
 
+        if (_support) {
+            p.forVotes += weight;
+        } else {
+            p.againstVotes += weight;
+        }
+
+        emit Voted(_id, msg.sender, _support, weight);
+    }
+
+    /// @notice Execute a passed proposal.
+    /// @dev    Bug 2: tx.origin check instead of msg.sender.
+    function execute(uint256 _id) external {
+        Proposal storage p = proposals[_id];
+        require(block.timestamp >= p.deadline, "Gov: voting still active");
+        require(!p.executed, "Gov: already executed");
+        require(p.forVotes >= quorum, "Gov: quorum not reached");
+        require(p.forVotes > p.againstVotes, "Gov: proposal defeated");
+
+        // Bug 2: tx.origin — phishing attack can trigger execution via malicious proxy
+        require(tx.origin == owner || tx.origin == p.proposer, "Gov: not authorized");
+
+        p.executed = true;
+
+        emit ProposalExecuted(_id);
+
+        // Bug 3: unbounded callData — could call selfdestruct on target or anything
+        (bool ok,) = p.target.call(p.callData);
+        require(ok, "Gov: execution failed");
+    }
+
+    /// @notice Get all active proposal IDs.
+    /// @dev    Bug 4: unbounded loop — grows with proposal count until it OOGs.
+    function getActiveProposals() external view returns (uint256[] memory) {
+        uint256 count = 0;
+        // Bug 4: first pass is O(n) unbounded
+        for (uint256 i = 0; i < proposalCount; i++) {
+            if (!proposals[i].executed && block.timestamp < proposals[i].deadline) {
+                count++;
+            }
+        }
+        uint256[] memory active = new uint256[](count);
+        uint256 idx = 0;
+        // Bug 4: second pass — double O(n) unbounded loop
+        for (uint256 i = 0; i < proposalCount; i++) {
+            if (!proposals[i].executed && block.timestamp < proposals[i].deadline) {
+                active[idx++] = i;
+            }
+        }
+        return active;
+    }
+}
