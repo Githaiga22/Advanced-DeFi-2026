@@ -22,3 +22,28 @@ pragma solidity ^0.8.13;
 /// ╚══════════════════════════════════════════════════════════════╝
 contract Challenge_SafeVault {
     // ─── Events ────────────────────────────────────────────────────────────────
+
+    event Deposited(address indexed user, uint256 amount);
+    event Withdrawn(address indexed user, uint256 amount);
+
+    // ─── State ─────────────────────────────────────────────────────────────────
+
+    address public owner;
+    mapping(address => uint256) public balances;
+
+    // ─── Constructor ───────────────────────────────────────────────────────────
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    // ─── Functions ─────────────────────────────────────────────────────────────
+
+    /// @notice Deposit ETH into the vault.
+    function deposit() external payable {
+        require(msg.value > 0, "SafeVault: zero deposit");
+        balances[msg.sender] += msg.value;
+        emit Deposited(msg.sender, msg.value);
+    }
+
+    /// @notice Withdraw your deposited ETH.
