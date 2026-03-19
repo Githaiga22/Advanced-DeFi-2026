@@ -39,3 +39,44 @@ EOA (Alice) → MaliciousContract → VulnerableContract
 modifier onlyOwner() {
     require(tx.origin == owner, "not owner"); // ← phishable
     _;
+}
+
+function destroy() external onlyOwner {
+    selfdestruct(payable(owner)); // ← callable via phishing
+}
+```
+
+---
+
+## The Phishing Attack
+
+```solidity
+// Attacker deploys this contract and tricks the owner into calling it
+contract Phisher {
+    VulnerableAccessControl public target;
+    address public attacker;
+
+    constructor(address _target) {
+        target = VulnerableAccessControl(_target);
+        attacker = msg.sender;
+    }
+
+    // Owner calls this (maybe via a misleading UI)
+    function claimFreeTokens() external {
+        // tx.origin == owner (they called this)
+        // msg.sender == address(this)
+        // The target's check passes because tx.origin == owner
+        target.destroy(); // ← drain + destroy target!
+    }
+}
+```
+
+---
+
+## Fixed Code
+
+```solidity
+// ✅ FIXED — use msg.sender, never tx.origin for auth
+modifier onlyOwner() {
+    require(msg.sender == owner, "not owner"); // ← phishing-safe
+    _;
