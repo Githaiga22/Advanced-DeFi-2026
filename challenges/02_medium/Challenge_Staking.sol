@@ -38,3 +38,43 @@ contract Challenge_Staking {
 
     mapping(address => uint256) public stakedBalance;
     mapping(address => uint256) public userRewardPerTokenPaid;
+    mapping(address => uint256) public rewards;
+
+    uint256 public constant REWARD_DURATION = 30 days;
+    uint256 public rewardRate; // rewards per second
+
+    // ─── Constructor ───────────────────────────────────────────────────────────
+
+    constructor() {
+        owner = msg.sender;
+        lastUpdateTime = block.timestamp;
+    }
+
+    // ─── Modifiers ─────────────────────────────────────────────────────────────
+
+    modifier updateReward(address _account) {
+        rewardPerTokenStored = rewardPerToken();
+        lastUpdateTime = block.timestamp;
+        if (_account != address(0)) {
+            rewards[_account] = earned(_account);
+            userRewardPerTokenPaid[_account] = rewardPerTokenStored;
+        }
+        _;
+    }
+
+    // ─── Functions ─────────────────────────────────────────────────────────────
+
+    /// @notice Fund the reward pool.
+    function fundRewards() external payable {
+        require(msg.sender == owner, "Staking: not owner");
+        rewardPool += msg.value;
+        rewardRate = rewardPool / REWARD_DURATION;
+        emit RewardFunded(msg.value);
+    }
+
+    /// @notice Stake ETH to earn rewards.
+    function stake() external payable updateReward(msg.sender) {
+        require(msg.value > 0, "Staking: zero amount");
+        stakedBalance[msg.sender] += msg.value;
+        totalStaked += msg.value;
+        emit Staked(msg.sender, msg.value);
