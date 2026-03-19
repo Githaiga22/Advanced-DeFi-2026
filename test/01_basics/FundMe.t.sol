@@ -88,3 +88,50 @@ contract FundMeTest is Test {
 
     function test_WithdrawByOwner() public {
         vm.prank(alice);
+        fundMe.fund{value: FUND_AMOUNT}();
+
+        uint256 ownerBefore = owner.balance;
+
+        vm.prank(owner);
+        fundMe.withdraw();
+
+        assertEq(owner.balance, ownerBefore + FUND_AMOUNT);
+        assertEq(address(fundMe).balance, 0);
+    }
+
+    function test_WithdrawResetsFunderRecords() public {
+        vm.prank(alice);
+        fundMe.fund{value: FUND_AMOUNT}();
+
+        vm.prank(owner);
+        fundMe.withdraw();
+
+        assertEq(fundMe.getAmountFunded(alice), 0);
+        assertEq(fundMe.getFunders().length, 0);
+    }
+
+    function test_WithdrawRevertsForNonOwner() public {
+        vm.prank(alice);
+        fundMe.fund{value: FUND_AMOUNT}();
+
+        vm.prank(alice);
+        vm.expectRevert(FundMe.FundMe__NotOwner.selector);
+        fundMe.withdraw();
+    }
+
+    function test_WithdrawRevertsIfEmpty() public {
+        vm.prank(owner);
+        vm.expectRevert(FundMe.FundMe__NothingToWithdraw.selector);
+        fundMe.withdraw();
+    }
+
+    // ─── Fuzz ──────────────────────────────────────────────────────────────────
+
+    function testFuzz_FundWithVariousAmounts(uint256 _amount) public {
+        vm.assume(_amount >= MINIMUM_ETH && _amount <= 5 ether);
+        vm.deal(alice, _amount);
+        vm.prank(alice);
+        fundMe.fund{value: _amount}();
+        assertEq(fundMe.getAmountFunded(alice), _amount);
+    }
+}
