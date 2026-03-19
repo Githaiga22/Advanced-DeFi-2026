@@ -72,3 +72,42 @@ function swap(uint256 amountIn, uint256 minAmountOut) external {
 |---|---|
 | Slippage parameters | User sets acceptable price range |
 | Commit-reveal scheme | Hide inputs until after commitment |
+| Flashbots / private RPC | Bypass public mempool (no front-running) |
+| Time-weighted average price (TWAP) | Resist single-block price manipulation |
+| Deadline parameter | Reject stale transactions |
+
+---
+
+## Commit-Reveal Example
+
+```solidity
+// Phase 1: Commit (hide your bid)
+bytes32 commitment = keccak256(abi.encodePacked(bidAmount, salt));
+commitments[msg.sender] = commitment;
+
+// Phase 2: Reveal (after commit phase ends)
+function reveal(uint256 bidAmount, bytes32 salt) external {
+    require(
+        keccak256(abi.encodePacked(bidAmount, salt)) == commitments[msg.sender],
+        "invalid reveal"
+    );
+    // Process the revealed bid
+}
+```
+
+---
+
+## Tools to Observe MEV
+
+- **Flashbots MEV Explore:** See live MEV extraction
+- **EigenPhi:** Sandwich attack analytics
+- **mevboost.pics:** Validator MEV statistics
+
+---
+
+## Key Takeaways
+
+- Any on-chain action with profit potential can be front-run
+- DEX interactions always need slippage protection and deadline parameters
+- Commit-reveal schemes protect against front-running where ordering matters
+- Private mempools (Flashbots Protect) eliminate front-running for end users
