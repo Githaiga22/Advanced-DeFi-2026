@@ -32,3 +32,38 @@ Each challenge contract is written to look like real production code — full Na
 ---
 
 ## Finding Report Template
+
+Use this format when submitting:
+
+```
+## Finding: [Title]
+
+**Severity:** Critical / High / Medium / Low / Informational
+**Contract:** Challenge_XYZ.sol
+**Function:** functionName()
+**Line(s):** ~42
+
+### Description
+Explain the vulnerability in plain English.
+
+### Impact
+What can an attacker do? What funds are at risk?
+
+### Attack Scenario (Step-by-Step)
+1. Attacker deploys MaliciousContract
+2. Attacker calls victim.deposit{value: 1 ether}()
+3. ...
+
+### Proof of Concept (optional — +50 pts)
+```solidity
+// test/03_exploits/MyExploit.t.sol
+contract MyExploitTest is Test {
+    ...
+}
+```
+
+### Recommended Fix
+How should the developer fix this?
+```
+
+---
