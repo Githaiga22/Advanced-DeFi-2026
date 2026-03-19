@@ -30,3 +30,20 @@ contract Deploy is Script {
 
         // ── Module 1: Basics ────────────────────────────────────────────────────
         SimpleStorage simpleStorage = new SimpleStorage();
+        console2.log("SimpleStorage deployed at:  ", address(simpleStorage));
+
+        FundMe fundMe = new FundMe();
+        console2.log("FundMe deployed at:         ", address(fundMe));
+
+        // ── Module 2: Intermediate ──────────────────────────────────────────────
+        ERC20Token token = new ERC20Token("Allan Token", "ALN", 18, 1_000_000);
+        console2.log("ERC20Token deployed at:     ", address(token));
+
+        SimpleVault vault = new SimpleVault();
+        console2.log("SimpleVault deployed at:    ", address(vault));
+
+        vm.stopBroadcast();
+
+        console2.log("=== Deployment complete ===");
+    }
+}
