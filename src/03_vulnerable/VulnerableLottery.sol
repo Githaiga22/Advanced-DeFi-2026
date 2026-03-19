@@ -27,3 +27,32 @@ contract VulnerableLottery {
     event TicketPurchased(address indexed player);
     event WinnerSelected(address indexed winner, uint256 prize);
 
+    // ─── State ─────────────────────────────────────────────────────────────────
+
+    address public owner;
+    uint256 public ticketPrice;
+    uint256 public lotteryEndTime;
+    address[] public players;
+    bool public drawn;
+
+    // ─── Constructor ───────────────────────────────────────────────────────────
+
+    constructor(uint256 _ticketPrice, uint256 _durationSeconds) {
+        owner = msg.sender;
+        ticketPrice = _ticketPrice;
+        lotteryEndTime = block.timestamp + _durationSeconds;
+    }
+
+    // ─── Functions ─────────────────────────────────────────────────────────────
+
+    /// @notice Buy a lottery ticket.
+    function buyTicket() external payable {
+        require(block.timestamp < lotteryEndTime, "VulnerableLottery: lottery closed");
+        require(msg.value == ticketPrice, "VulnerableLottery: wrong ticket price");
+        players.push(msg.sender);
+        emit TicketPurchased(msg.sender);
+    }
+
+    /// @notice Draw the winner after the lottery ends.
+    /// @dev    BUG: randomness comes from block.timestamp — manipulable by validators.
+    function drawWinner() external {
