@@ -28,3 +28,33 @@ pragma solidity ^0.8.13;
 ///
 ///         See docs/04_dos_attack.md for the full explanation and fixes.
 contract VulnerableAuction {
+    // ─── Events ────────────────────────────────────────────────────────────────
+
+    event NewHighBid(address indexed bidder, uint256 amount);
+    event AuctionEnded(address indexed winner, uint256 amount);
+
+    // ─── State ─────────────────────────────────────────────────────────────────
+
+    address public owner;
+    uint256 public auctionEndTime;
+    address public highestBidder;
+    uint256 public highestBid;
+    bool public ended;
+
+    // Unbounded array of all historical bidders (Bug 2)
+    address[] public allBidders;
+
+    // ─── Constructor ───────────────────────────────────────────────────────────
+
+    constructor(uint256 _durationSeconds) {
+        owner = msg.sender;
+        auctionEndTime = block.timestamp + _durationSeconds;
+    }
+
+    // ─── Functions ─────────────────────────────────────────────────────────────
+
+    /// @notice Place a bid. Must exceed current highest bid.
+    /// @dev    BUG: refund via push payment — a reverting receive() blocks the auction.
+    function bid() external payable {
+        require(block.timestamp < auctionEndTime, "VulnerableAuction: auction ended");
+        require(msg.value > highestBid, "VulnerableAuction: bid too low");
