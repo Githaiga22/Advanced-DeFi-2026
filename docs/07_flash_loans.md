@@ -34,3 +34,40 @@ Transaction ends:
 | Collateral swap | Change collateral type in a lending protocol |
 | Self-liquidation | Repay own debt without pre-holding repayment token |
 | Leveraged positions | Open leveraged trades without upfront capital |
+
+---
+
+## Attack Uses
+
+Flash loans amplify existing vulnerabilities. Common attack chains:
+
+### Price Oracle Manipulation
+```
+1. Flash borrow 10,000 ETH
+2. Dump ETH into AMM → crashes ETH price
+3. Borrow against now-cheap ETH collateral (get more than fair value)
+4. Repay flash loan
+5. Keep the excess borrowed funds
+```
+
+### Governance Manipulation
+```
+1. Flash borrow 51% of governance tokens
+2. Vote on malicious proposal (pass instantly)
+3. Execute proposal (drain treasury)
+4. Repay governance tokens
+```
+
+### Liquidation Attacks
+```
+1. Flash borrow the debt token
+2. Liquidate a position for profit (collateral > debt)
+3. Repay flash loan, keep collateral profit
+```
+
+---
+
+## Protocol-Level Defenses
+
+| Defense | How It Works |
+|---|---|
