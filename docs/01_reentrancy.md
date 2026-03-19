@@ -39,3 +39,45 @@ function withdraw() external {
 
     // EFFECT last ← balance never zeroed before re-entry
     balances[msg.sender] = 0;
+}
+```
+
+---
+
+## The Attack
+
+```
+1. Attacker.attack() calls VulnerableBank.deposit{value: 1 ETH}()
+2. Attacker calls VulnerableBank.withdraw()
+3. Bank sends 1 ETH → triggers Attacker.receive()
+4. Attacker.receive() calls VulnerableBank.withdraw() AGAIN
+5. Bank's balance check passes (balance still shows 1 ETH!)
+6. Bank sends another 1 ETH → Attacker.receive() fires again
+7. Loop continues until bank is drained
+```
+
+**Trace (run with -vvvv):**
+```
+[CALL] VulnerableBank.withdraw()
+  [CALL] Attacker.receive() ← 1st re-entry
+    [CALL] VulnerableBank.withdraw()
+      [CALL] Attacker.receive() ← 2nd re-entry
+        [CALL] VulnerableBank.withdraw()
+          ...
+```
+
+---
+
+## Fixed Code
+
+```solidity
+// ✅ FIXED — CEI pattern + mutex guard
+bool private locked;
+
+modifier nonReentrant() {
+    require(!locked, "reentrant call");
+    locked = true;
+    _;
+    locked = false;
+}
+
