@@ -32,3 +32,38 @@ contract Challenge_Escrow {
     struct EscrowRecord {
         address depositor;
         address beneficiary;
+        uint256 amount;
+        uint256 deadline;
+        bool released;
+    }
+
+    uint256 public nextId;
+    mapping(uint256 => EscrowRecord) public escrows;
+
+    // ─── Functions ─────────────────────────────────────────────────────────────
+
+    /// @notice Create a new escrow.
+    /// @param _beneficiary Who receives the funds.
+    /// @param _lockDuration How long (in seconds) before the beneficiary can claim.
+    function createEscrow(address _beneficiary, uint256 _lockDuration) external payable returns (uint256 id) {
+        require(msg.value > 0, "Escrow: zero amount");
+        require(_beneficiary != address(0), "Escrow: zero address");
+
+        id = nextId++;
+        escrows[id] = EscrowRecord({
+            depositor: msg.sender,
+            beneficiary: _beneficiary,
+            amount: msg.value,
+            deadline: block.timestamp + _lockDuration,
+            released: false
+        });
+
+        emit EscrowCreated(id, msg.sender, _beneficiary, msg.value, block.timestamp + _lockDuration);
+    }
+
+    /// @notice Release funds to the beneficiary after deadline.
+    /// @dev    Bug 1: uses tx.origin instead of msg.sender for the auth check.
+    function release(uint256 _id) external {
+        EscrowRecord storage record = escrows[_id];
+        require(!record.released, "Escrow: already released");
+        require(block.timestamp >= record.deadline, "Escrow: still locked");
