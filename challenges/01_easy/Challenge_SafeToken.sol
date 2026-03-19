@@ -65,3 +65,38 @@ contract Challenge_SafeToken {
         return true;
     }
 
+    function transferFrom(address _from, address _to, uint256 _amount) external returns (bool) {
+        require(balanceOf[_from] >= _amount, "SafeToken: insufficient balance");
+        require(allowance[_from][msg.sender] >= _amount, "SafeToken: insufficient allowance");
+        allowance[_from][msg.sender] -= _amount;
+        balanceOf[_from] -= _amount;
+        balanceOf[_to] += _amount;
+        emit Transfer(_from, _to, _amount);
+        return true;
+    }
+
+    // ─── Owner functions ───────────────────────────────────────────────────────
+
+    /// @notice Mint new tokens. Only callable by the owner.
+    function mint(address _to, uint256 _amount) external {
+        require(msg.sender == owner, "SafeToken: not owner");
+        totalSupply += _amount;
+        balanceOf[_to] += _amount;
+        emit Transfer(address(0), _to, _amount);
+    }
+
+    /// @notice Initiate ownership transfer. New owner must accept.
+    function transferOwnership(address _newOwner) external {
+        require(msg.sender == owner, "SafeToken: not owner");
+        pendingOwner = _newOwner;
+    }
+
+    /// @notice Accept ownership.
+    /// @dev    Bug: access control check is incorrect — who can call this?
+    function acceptOwnership() external {
+        require(msg.sender == owner, "SafeToken: not pending owner"); // ← bug here
+        emit OwnershipTransferred(owner, pendingOwner);
+        owner = pendingOwner;
+        pendingOwner = address(0);
+    }
+}
