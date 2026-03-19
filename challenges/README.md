@@ -67,3 +67,39 @@ How should the developer fix this?
 ```
 
 ---
+
+## Challenges Index
+
+### Level 1 — Easy
+
+| Contract | Topic | Hidden Bugs | Max Points |
+|---|---|---|---|
+| `01_easy/Challenge_SafeVault.sol` | Reentrancy | 1 | 150 pts |
+| `01_easy/Challenge_SafeToken.sol` | Access Control | 1 | 125 pts |
+
+### Level 2 — Medium
+
+| Contract | Topic | Hidden Bugs | Max Points |
+|---|---|---|---|
+| `02_medium/Challenge_Staking.sol` | Reentrancy + Precision Loss | 2 | 250 pts |
+| `02_medium/Challenge_Escrow.sol` | tx.origin + Timestamp | 2 | 250 pts |
+
+### Level 3 — Hard
+
+| Contract | Topic | Hidden Bugs | Max Points |
+|---|---|---|---|
+| `03_hard/Challenge_DeFiPool.sol` | Oracle + Reentrancy + Flash Loan | 3+ | 525+ pts |
+| `03_hard/Challenge_Governance.sol` | Flash Loan Vote + tx.origin + DoS | 3+ | 500+ pts |
+
+---
+
+## Recommended Order
+
+1. Start with `Challenge_SafeVault.sol` — it teaches you the single most important DeFi bug.
+2. Move to `Challenge_SafeToken.sol` — access control is the #1 audit finding category.
+3. Once you're scoring 80%+ on Level 1, move to Level 2.
+4. Hard challenges are close to real CodeHawks / Sherlock submissions.
+
+---
+
+> Answer keys are never committed to this repo. Claude holds them in context and scores conversationally.
