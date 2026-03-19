@@ -85,3 +85,49 @@ Covers: complex protocols, MEV, cross-chain, governance
 
 ## Essential Tools
 
+| Tool | Purpose | Link |
+|---|---|---|
+| Foundry | Build, test, deploy | foundry.paradigm.xyz |
+| Slither | Static analysis | github.com/crytic/slither |
+| Aderyn | Modern Solidity analyzer | github.com/cyfrin/aderyn |
+| Chisel | Solidity REPL | Built into Foundry |
+| Etherscan | Contract verification | etherscan.io |
+| Tenderly | Transaction simulation | tenderly.co |
+
+---
+
+## Community & Bug Bounty Platforms
+
+| Platform | What It Is |
+|---|---|
+| **CodeHawks** (Cyfrin) | Competitive audits + First Flight challenges for beginners |
+| **Code4rena** | Competitive audits — warden system |
+| **Sherlock** | Audits + insurance underwriting |
+| **Immunefi** | Private bug bounties (up to $10M payouts) |
+| **Cyfrin Discord** | Community support for Updraft students |
+
+---
+
+## Recommended Reading
+
+| Resource | Why |
+|---|---|
+| "The Art of Smart Contract Security" | Foundational text |
+| Ethereum Yellow Paper | Protocol internals |
+| Trail of Bits Blog | Professional audit techniques |
+| Rekt News | Real-world exploit postmortems |
+| Solodit | Aggregated audit findings database |
+
+---
+
+## Patrick Collins Content
+
+| Content | Platform |
+|---|---|
+| Foundry Full Course | YouTube — freeCodeCamp |
+| Cyfrin Updraft | updraft.cyfrin.io |
+| Smart Contract Security | Cyfrin Updraft |
+
+---
+
+> Start with CodeHawks "First Flight" — beginner-friendly competitive audits designed exactly for students at this level.
