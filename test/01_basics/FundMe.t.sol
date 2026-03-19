@@ -43,3 +43,48 @@ contract FundMeTest is Test {
     function test_FundRevertsIfBelowMinimum() public {
         uint256 tooLow = MINIMUM_ETH - 1;
         vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(FundMe.FundMe__BelowMinimum.selector, tooLow, MINIMUM_ETH));
+        fundMe.fund{value: tooLow}();
+    }
+
+    function test_FundAccumulatesBalance() public {
+        vm.startPrank(alice);
+        fundMe.fund{value: FUND_AMOUNT}();
+        fundMe.fund{value: FUND_AMOUNT}();
+        vm.stopPrank();
+        assertEq(fundMe.getAmountFunded(alice), FUND_AMOUNT * 2);
+    }
+
+    function test_MultipleFundersTracked() public {
+        vm.prank(alice);
+        fundMe.fund{value: FUND_AMOUNT}();
+
+        vm.prank(bob);
+        fundMe.fund{value: FUND_AMOUNT}();
+
+        address[] memory funders = fundMe.getFunders();
+        assertEq(funders.length, 2);
+        assertEq(funders[0], alice);
+        assertEq(funders[1], bob);
+    }
+
+    // ─── receive() / fallback() ────────────────────────────────────────────────
+
+    function test_ReceiveRoutesToFund() public {
+        vm.prank(alice);
+        (bool ok,) = address(fundMe).call{value: FUND_AMOUNT}("");
+        assertTrue(ok);
+        assertEq(fundMe.getAmountFunded(alice), FUND_AMOUNT);
+    }
+
+    function test_FallbackRoutesToFund() public {
+        vm.prank(alice);
+        (bool ok,) = address(fundMe).call{value: FUND_AMOUNT}(abi.encodePacked("someData"));
+        assertTrue(ok);
+        assertEq(fundMe.getAmountFunded(alice), FUND_AMOUNT);
+    }
+
+    // ─── withdraw() ────────────────────────────────────────────────────────────
+
+    function test_WithdrawByOwner() public {
+        vm.prank(alice);
