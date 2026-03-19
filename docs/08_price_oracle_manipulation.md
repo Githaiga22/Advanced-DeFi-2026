@@ -40,3 +40,46 @@ function borrow(uint256 _tokenCollateral) external {
 ---
 
 ## The Attack (Spot Price Manipulation)
+
+```
+Same transaction:
+  Step 1: Flash borrow 10,000 ETH
+  Step 2: Dump 10,000 ETH into AMM → reserves shift → ETH price drops, token price spikes
+  Step 3: Call borrow() — AMM now shows 1 ETH = 0.0001 tokens (artificially)
+          → borrower receives 10,000 ETH for 1 token of collateral
+  Step 4: Repay flash loan
+  Step 5: Keep stolen ETH
+```
+
+---
+
+## Fix 1: Chainlink Price Feed
+
+```solidity
+// ✅ FIXED — Chainlink aggregator (off-chain, multi-source)
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
+AggregatorV3Interface internal priceFeed =
+    AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419); // ETH/USD mainnet
+
+function getPrice() public view returns (uint256) {
+    (, int256 price,,,) = priceFeed.latestRoundData();
+    return uint256(price); // 8 decimals
+}
+```
+
+---
+
+## Fix 2: Uniswap v3 TWAP
+
+```solidity
+// ✅ FIXED — TWAP oracle (time-weighted average price)
+function getTWAP(uint32 _period) public view returns (uint256) {
+    uint32[] memory secondsAgos = new uint32[](2);
+    secondsAgos[0] = _period; // e.g. 1800 = 30 minutes ago
+    secondsAgos[1] = 0;
+
+    (int56[] memory tickCumulatives,) = pool.observe(secondsAgos);
+    int56 tickDelta = tickCumulatives[1] - tickCumulatives[0];
+    int24 avgTick = int24(tickDelta / int56(uint56(_period)));
+
