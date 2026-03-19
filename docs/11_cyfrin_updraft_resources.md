@@ -41,3 +41,47 @@ Covers: vulnerability categories, auditing process, tools
 | Oracle manipulation | `src/03_vulnerable/VulnerableOracle.sol` + `docs/08_price_oracle_manipulation.md` |
 | Auditing methodology | `docs/10_auditing_methodology.md` |
 
+### Advanced DeFi Security
+Covers: complex protocols, MEV, cross-chain, governance
+
+| Topic | This Repo |
+|---|---|
+| Liquidity pools | `challenges/03_hard/Challenge_DeFiPool.sol` |
+| Governance attacks | `challenges/03_hard/Challenge_Governance.sol` |
+
+---
+
+## Recommended Learning Order
+
+### Week 1 — Foundations
+1. `docs/00_setup_and_commands.md` — master Foundry
+2. `src/01_basics/SimpleStorage.sol` + test
+3. `src/01_basics/FundMe.sol` + test
+4. Run `forge test -vvv` — understand output
+
+### Week 2 — Intermediate Solidity
+1. `src/02_intermediate/ERC20Token.sol` + test
+2. `src/02_intermediate/SimpleVault.sol` + test
+3. Read `docs/01_reentrancy.md`
+
+### Week 3 — Vulnerabilities
+1. `src/03_vulnerable/VulnerableBank.sol`
+2. Run `test/03_exploits/ReentrancyExploit.t.sol -vvvv`
+3. `src/03_vulnerable/VulnerableToken.sol` + overflow exploit
+4. `src/03_vulnerable/VulnerableAuction.sol` + DoS exploit
+
+### Week 4 — Advanced Attacks
+1. `src/03_vulnerable/VulnerableOracle.sol` + `docs/08_price_oracle_manipulation.md`
+2. `src/03_vulnerable/VulnerableLottery.sol` + `docs/06_timestamp_dependence.md`
+3. `src/03_vulnerable/VulnerableAccessControl.sol`
+
+### Week 5+ — Bug Bounty Challenges
+1. `challenges/01_easy/Challenge_SafeVault.sol`
+2. `challenges/01_easy/Challenge_SafeToken.sol`
+3. `challenges/02_medium/` — when scoring 80%+ on easy
+4. `challenges/03_hard/` — when confident with medium
+
+---
+
+## Essential Tools
+
